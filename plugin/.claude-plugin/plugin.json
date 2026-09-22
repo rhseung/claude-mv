@@ -1,5 +1,11 @@
 {
   "name": "claude-mv",
   "version": "0.1.1",
-  "description": "프로젝트 디렉터리를 옮긴 뒤 Claude 상태와의 연결이 끊기면 알려줍니다"
+  "description": "프로젝트 디렉터리를 옮긴 뒤 Claude 상태와의 연결이 끊기면 알려줍니다",
+  "author": {
+    "name": "Hyunseung Ryu",
+    "url": "https://github.com/rhseung"
+  },
+  "homepage": "https://github.com/rhseung/claude-mv",
+  "license": "MIT"
 }

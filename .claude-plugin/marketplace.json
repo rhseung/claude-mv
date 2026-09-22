@@ -9,5 +9,6 @@
       "source": "./plugin",
       "description": "프로젝트 디렉터리를 옮긴 뒤 Claude 상태와의 연결이 끊기면 알려줍니다"
     }
-  ]
+  ],
+  "description": "프로젝트 경로가 바뀌었을 때 Claude Code 상태를 따라 옮기는 도구"
 }
