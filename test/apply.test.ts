@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { createFakeClaudeHome } from './fixtures/claude-home.js';
+import { noLocks } from './fixtures/scenario.js';
 import { records } from './fixtures/transcript.js';
 import { diff, exists, snapshot } from './fixtures/tree.js';
 import { apply, backupRoot } from '../src/core/apply.js';
@@ -25,8 +26,6 @@ async function setup() {
   mkdirSync(join(src, 'sub'), { recursive: true });
   writeFileSync(join(src, 'README.md'), '# hello\n');
 
-  // 플랜 소유권은 트랜스크립트의 planFilePath 구조 필드로만 성립한다.
-  // 경로 문자열로 전역 플랜 디렉터리를 훑으면 남의 플랜을 건드리게 된다.
   const planFile = join(seed.home, 'plans', 'a-plan.md');
 
   const target = createFakeClaudeHome({
@@ -74,8 +73,7 @@ async function setup() {
     fileExists: exists,
     srcExists: true,
     dstExists: false,
-    liveSessions: [],
-    blockingSessions: [],
+    locks: noLocks,
   });
 
   return { home: target, work, src, dst, plan, planFile, plansDir };
@@ -102,41 +100,33 @@ describe('apply', () => {
     const result = await apply({ plan: ctx.plan, backup, journal });
     expect(result.failed).toBeNull();
 
-    // 실제 디렉터리
     expect(exists(ctx.dst)).toBe(true);
     expect(exists(ctx.src)).toBe(false);
     expect(readFileSync(join(ctx.dst, 'README.md'), 'utf8')).toBe('# hello\n');
 
-    // project 디렉터리 이름
     expect(exists(join(ctx.home.projectsDir, mangle(ctx.dst)))).toBe(true);
     expect(exists(join(ctx.home.projectsDir, mangle(ctx.src)))).toBe(false);
 
-    // 트랜스크립트 cwd
     const moved = readFileSync(join(ctx.home.projectsDir, mangle(ctx.dst), 's1.jsonl'), 'utf8');
     expect(moved).toContain(ctx.dst);
     expect(moved).not.toContain(`"${ctx.src}"`);
 
-    // 부모 디렉터리의 subagent 는 제자리에서 고쳐진다
     const inParent = readFileSync(
       join(ctx.home.projectsDir, mangle(ctx.work), 's2', 'subagents', 'agent-1.jsonl'),
       'utf8',
     );
     expect(inParent).toContain(ctx.dst);
 
-    // ~/.claude.json 은 해당 키만 바뀌고 나머지는 그대로
     const config = JSON.parse(readFileSync(ctx.home.configPath, 'utf8'));
     expect(Object.keys(config.projects)).toEqual([ctx.dst, '/unrelated/keep']);
     expect(config.githubRepoPaths['me/repo']).toEqual([ctx.dst]);
 
-    // history 는 해당 줄만
     const history = readFileSync(ctx.home.historyPath, 'utf8');
     expect(history.split('\n').filter((l) => l.includes(ctx.dst))).toHaveLength(3);
     expect(history.split('\n').filter((l) => l.includes('/unrelated/keep'))).toHaveLength(2);
 
-    // 플랜은 지시서라 기본으로 고친다
     expect(readFileSync(ctx.planFile, 'utf8')).toContain(`${ctx.dst}/sub`);
 
-    // MCP 로그 캐시
     expect(exists(join(ctx.home.cacheRoot!, mangle(ctx.dst)))).toBe(true);
   });
 });
@@ -146,7 +136,6 @@ describe('rollback', () => {
     const ctx = await setup();
     const root = backupRoot(join(ctx.home.home, '.claude-mv'));
 
-    // 백업 디렉터리는 원래 트리 바깥에 둔다. 스냅샷이 백업 자신을 세면 안 된다.
     const before = snapshot(ctx.home.home);
 
     const { backup, journal } = run(ctx, root);
@@ -158,7 +147,6 @@ describe('rollback', () => {
     expect(result.residue).toEqual([]);
 
     const after = snapshot(ctx.home.home);
-    // 백업 디렉터리 자체는 비교에서 뺀다.
     const ignore = (m: Map<string, string>) =>
       new Map([...m].filter(([p]) => !p.startsWith('.claude-mv')));
 
@@ -177,7 +165,6 @@ describe('rollback', () => {
       plan: ctx.plan,
     });
 
-    // sealed 를 쓰지 않았다는 건 커밋 장벽 전에 죽었다는 뜻이다.
     const result = rollback({ backupDir: backup.dir });
     expect(result.ok).toBe(true);
     expect(result.restored).toEqual([]);

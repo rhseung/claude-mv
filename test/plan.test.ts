@@ -3,10 +3,14 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { createFakeClaudeHome, type HomeSpec } from './fixtures/claude-home.js';
+import { noLocks } from './fixtures/scenario.js';
 import { records } from './fixtures/transcript.js';
 import { mangle } from '../src/core/mangle.js';
 import { buildPlan, type MoveRequest, type PlanContext } from '../src/core/plan.js';
 import { scan } from '../src/core/scan.js';
+
+import type { LockFinding, LockReport } from '../src/core/lock.js';
+import type { SessionRecord } from '../src/core/scan.js';
 
 const SRC = '/Users/me/dev/old-name';
 const DST = '/Users/me/dev/new-name';
@@ -39,13 +43,22 @@ async function plan(
     fileExists: () => true,
     srcExists: true,
     dstExists: false,
-    liveSessions: [],
-    blockingSessions: [],
+    locks: noLocks,
     ...ctx,
   });
 }
 
 const kinds = (p: Awaited<ReturnType<typeof plan>>) => p.steps.map((s) => s.kind);
+
+function lockedBy(session: SessionRecord): LockReport {
+  const finding: LockFinding = {
+    session,
+    verdict: 'live',
+    relation: 'at-or-under',
+    why: '실행 중입니다.',
+  };
+  return { findings: [finding], blocking: [finding] };
+}
 
 describe('buildPlan', () => {
   it('src 의 project 디렉터리는 통째로 옮긴다', async () => {
@@ -59,8 +72,6 @@ describe('buildPlan', () => {
   });
 
   it('부모 디렉터리는 옮기지 않고 해당 레코드만 고친다', async () => {
-    // 부모에서 시작한 세션이 자식 경로에서 작업한 경우. 세션 하나를 두 디렉터리로
-    // 쪼개면 resume 이 깨지므로 파일은 제자리에 둔다.
     const p = await plan({
       projects: [
         {
@@ -87,8 +98,6 @@ describe('buildPlan', () => {
   });
 
   it('플랜 파일을 참조했을 뿐인 세션은 cwd 혼재가 아니다', async () => {
-    // planFilePath 는 ~/.claude/plans 를 가리키므로 src 바깥이다. 그걸 혼재로 세면
-    // 플랜을 쓴 모든 세션에 경고가 뜬다.
     const p = await plan({
       projects: [
         {
@@ -110,7 +119,6 @@ describe('buildPlan', () => {
     const withFile = await plan(spec, {}, { plansDir: '/Users/me/.claude/plans' });
     expect(kinds(withFile)).toContain('rewrite-plan');
 
-    // 서브에이전트에게 알려만 주고 실제로 만들어지지 않은 경로가 흔하다.
     const without = await plan(
       spec,
       {},
@@ -141,7 +149,6 @@ describe('buildPlan', () => {
   });
 
   it('실제 디렉터리 이동이 마지막 단계다', async () => {
-    // 같은 파일시스템이면 rename 한 번이라 가장 좋은 커밋 지점이다.
     const p = await plan({
       projects: [{ path: SRC, sessions: { s1: [records.user(SRC)] } }],
       cacheFor: [SRC],
@@ -180,9 +187,7 @@ describe('차단', () => {
     const p = await plan(
       { projects: [{ path: SRC, sessions: { s1: [records.user(SRC)] } }] },
       {},
-      {
-        blockingSessions: [{ pid: 1, cwd: SRC, sessionId: 's' }],
-      },
+      { locks: lockedBy({ pid: 1, cwd: SRC, sessionId: 's', startedAtMs: 0 }) },
     );
     expect(p.blockers.map((b) => b.kind)).toContain('locked');
   });

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { createFakeClaudeHome } from './fixtures/claude-home.js';
+import { noLocks } from './fixtures/scenario.js';
 import { records } from './fixtures/transcript.js';
 import { diff, exists, snapshot } from './fixtures/tree.js';
 import { apply, backupRoot } from '../src/core/apply.js';
@@ -13,12 +14,6 @@ import { buildPlan, type MoveRequest } from '../src/core/plan.js';
 import { rollback } from '../src/core/rollback.js';
 import { scan } from '../src/core/scan.js';
 
-/**
- * 어느 단계에서 죽어도 되돌릴 수 있어야 한다.
- *
- * 위치가 여섯 군데라 전체를 한 번에 원자적으로 만들 수 없고, 그래서 저널과 백업이 있다.
- * 그게 정말 동작하는지는 "모든 중단 지점에서 원상복구되는가" 로만 확인할 수 있다.
- */
 async function buildScenario() {
   const seed = createFakeClaudeHome({});
   const work = join(seed.home, 'work');
@@ -68,8 +63,7 @@ async function buildScenario() {
     fileExists: exists,
     srcExists: true,
     dstExists: false,
-    liveSessions: [],
-    blockingSessions: [],
+    locks: noLocks,
   });
 
   return { home, plan, src, dst };
@@ -98,7 +92,6 @@ describe('크래시 주입', () => {
       const journal = Journal.resume(backup.journalPath);
       journal.append({ kind: 'begin', backupId: backup.id, plan });
 
-      // 커밋 루프의 failAt 번째 단계에서 터뜨린다. 리포터가 던지는 것과 같은 경로다.
       let seen = 0;
       const result = await apply({
         plan,
