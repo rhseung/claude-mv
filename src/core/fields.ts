@@ -60,12 +60,19 @@ function visitArray(holder: unknown, key: string, visit: PathVisitor): boolean {
  * 레코드의 약 40% 는 `cwd` 조차 없다 (mode, permission-mode, cost-state 같은 사이드카 타입).
  * 그래서 모든 접근이 방어적이어야 한다. 하나라도 가정하면 이관 도중에 터진다.
  */
-export function visitStructuralPaths(record: unknown, visit: PathVisitor): boolean {
+/**
+ * 작업 디렉터리를 뜻하는 필드만 방문한다.
+ *
+ * 나머지 구조 필드와 나누는 이유가 있다. 어떤 파일이 "이 프로젝트 것인가" 와
+ * "cwd 가 섞였는가" 는 오직 cwd 계열 필드로 판단해야 한다. planFilePath 나
+ * attachment.path 까지 섞어서 세면, 플랜을 참조했을 뿐인 세션이 전부
+ * "cwd 가 섞였다" 고 잘못 잡힌다.
+ */
+export function visitCwdFields(record: unknown, visit: PathVisitor): boolean {
   if (!isRecord(record)) return false;
   let changed = false;
 
   changed = visitField(record, 'cwd', visit) || changed;
-  changed = visitField(record, 'trackingPath', visit) || changed;
 
   // 툴 호출 하나당 하나씩 들어간다. 키가 tool_use id 라 미리 알 수 없다.
   const wire = record.wireIngestContext;
@@ -75,16 +82,29 @@ export function visitStructuralPaths(record: unknown, visit: PathVisitor): boole
     }
   }
 
+  const snapshot = isRecord(record.attachment) ? record.attachment.snapshot : undefined;
+  if (isRecord(snapshot)) {
+    changed = visitField(snapshot, 'workingDirectory', visit) || changed;
+    changed = visitArray(snapshot, 'additionalWorkingDirectories', visit) || changed;
+  }
+
+  return changed;
+}
+
+/**
+ * 경로를 담지만 작업 디렉터리는 아닌 구조 필드. 옮길 때는 같이 따라가야 하지만
+ * 소유권 판정에는 쓰지 않는다.
+ */
+export function visitOtherStructuralFields(record: unknown, visit: PathVisitor): boolean {
+  if (!isRecord(record)) return false;
+  let changed = false;
+
+  changed = visitField(record, 'trackingPath', visit) || changed;
+
   const attachment = record.attachment;
   if (isRecord(attachment)) {
     changed = visitField(attachment, 'path', visit) || changed;
     changed = visitField(attachment, 'planFilePath', visit) || changed;
-
-    const snapshot = attachment.snapshot;
-    if (isRecord(snapshot)) {
-      changed = visitField(snapshot, 'workingDirectory', visit) || changed;
-      changed = visitArray(snapshot, 'additionalWorkingDirectories', visit) || changed;
-    }
 
     if (Array.isArray(attachment.changes)) {
       for (const change of attachment.changes) {
@@ -102,6 +122,18 @@ export function visitStructuralPaths(record: unknown, visit: PathVisitor): boole
   }
 
   return changed;
+}
+
+/**
+ * 구조 필드를 전부 방문한다.
+ *
+ * 레코드의 약 40% 는 `cwd` 조차 없다 (mode, permission-mode, cost-state 같은 사이드카 타입).
+ * 그래서 모든 접근이 방어적이어야 한다. 하나라도 가정하면 이관 도중에 터진다.
+ */
+export function visitStructuralPaths(record: unknown, visit: PathVisitor): boolean {
+  const cwds = visitCwdFields(record, visit);
+  const others = visitOtherStructuralFields(record, visit);
+  return cwds || others;
 }
 
 /** 서술 필드. 기본으로는 방문하지 않는다. */

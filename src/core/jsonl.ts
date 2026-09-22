@@ -3,9 +3,14 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import { chmod, open, rename, stat, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { visitPaths, type PathVisitor, type VisitOptions } from './fields.js';
+import { visitCwdFields, visitPaths, type PathVisitor, type VisitOptions } from './fields.js';
 
 const LF = 0x0a;
+
+/** posix 절대 경로, 윈도우 드라이브 경로, UNC 경로. 나머지는 상대 경로로 본다. */
+function isAbsolutePathish(value: string): boolean {
+  return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value) || value.startsWith('\\\\');
+}
 
 export type LineRecord = {
   /** 줄바꿈을 뺀 원본 바이트. 절대 문자열로 왕복시키지 않는다. */
@@ -55,8 +60,17 @@ export type TranscriptCensus = {
   file: string;
   lines: number;
   bytes: number;
-  /** 구조 필드에서 발견한 절대 경로별 등장 횟수. */
+  /**
+   * 절대 경로별로 그 경로가 등장하는 **줄 수**. 필드 등장 횟수가 아니다.
+   * 재작성이 줄 단위로 일어나므로 계획에 필요한 값도 줄 수다. 한 줄에 cwd 와
+   * wireIngestContext.cwd 가 같이 있으면 등장 횟수는 2 지만 바뀌는 줄은 1 이다.
+   */
   paths: Map<string, number>;
+  /**
+   * 작업 디렉터리 필드에만 나온 경로별 줄 수. 소유권과 cwd 혼재 판정은 이걸로만 한다.
+   * paths 에는 플랜 경로나 attachment 경로가 섞여 있어서 그 판정에 쓸 수 없다.
+   */
+  cwds: Map<string, number>;
   /** 경로 필드가 아예 없는 레코드 수. 전체의 40% 가량은 정상이다. */
   pathless: number;
   /** JSON 으로 파싱되지 않은 줄의 인덱스. 잘린 마지막 줄은 정상이다. */
@@ -72,6 +86,7 @@ export async function censusTranscript(
     lines: 0,
     bytes: (await stat(filePath)).size,
     paths: new Map(),
+    cwds: new Map(),
     pathless: 0,
     malformed: [],
   };
@@ -88,21 +103,26 @@ export async function censusTranscript(
       continue;
     }
 
-    let found = 0;
-    visitPaths(
-      record,
-      (value) => {
-        // 상대 경로는 옮길 기준점이 없어 대상이 될 수 없다. census 에서도 뺀다.
-        if (!value.startsWith('/') && !/^[A-Za-z]:[\\/]/.test(value) && !value.startsWith('\\\\')) {
-          return undefined;
-        }
-        found++;
-        census.paths.set(value, (census.paths.get(value) ?? 0) + 1);
-        return undefined;
-      },
-      opts,
-    );
-    if (found === 0) census.pathless++;
+    // 한 줄에 같은 경로가 여러 필드에 나와도 바뀌는 줄은 하나다.
+    const onThisLine = new Set<string>();
+    const cwdsOnThisLine = new Set<string>();
+
+    const collect = (into: Set<string>) => (value: string) => {
+      // 상대 경로는 옮길 기준점이 없어 대상이 될 수 없다. census 에서도 뺀다.
+      if (isAbsolutePathish(value)) into.add(value);
+      return undefined;
+    };
+
+    visitPaths(record, collect(onThisLine), opts);
+    visitCwdFields(record, collect(cwdsOnThisLine));
+
+    for (const value of onThisLine) {
+      census.paths.set(value, (census.paths.get(value) ?? 0) + 1);
+    }
+    for (const value of cwdsOnThisLine) {
+      census.cwds.set(value, (census.cwds.get(value) ?? 0) + 1);
+    }
+    if (onThisLine.size === 0) census.pathless++;
   }
 
   return census;
