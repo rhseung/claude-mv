@@ -1,11 +1,13 @@
 {
   "name": "rhseung",
-  "owner": { "name": "Hyunseung Ryu" },
+  "owner": {
+    "name": "Hyunseung Ryu"
+  },
   "plugins": [
     {
       "name": "claude-mv",
       "source": "./plugin",
-      "description": "프로젝트 디렉터리를 옮긴 뒤 Claude 상태가 고아가 되면 알려줍니다"
+      "description": "프로젝트 디렉터리를 옮긴 뒤 Claude 상태와의 연결이 끊기면 알려줍니다"
     }
   ]
 }

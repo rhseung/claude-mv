@@ -37,7 +37,7 @@ function readdirNames(dir: string): string[] {
 }
 
 describe('doctor', () => {
-  it('사라진 경로를 고아로 잡는다', async () => {
+  it('사라진 경로를 끊긴 상태로 잡는다', async () => {
     const result = await report((w) => {
       const gone = join(w, 'gone');
       return { projects: [{ path: gone, sessions: { s1: [records.user(gone)] } }] };
@@ -100,7 +100,7 @@ describe('doctor', () => {
     expect(result.orphans[0]!.suggestions).toEqual([]);
   });
 
-  it('판정 불가와 빈 디렉터리는 고아와 구분한다', async () => {
+  it('판정 불가와 빈 디렉터리는 끊긴 상태와 구분한다', async () => {
     const result = await report((w): HomeSpec => ({
       projects: [
         { path: join(w, 'nopaths'), sessions: { s1: [records.pathless()] } },

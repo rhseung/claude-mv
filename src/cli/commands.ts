@@ -57,7 +57,7 @@ export const COMMANDS: CommandSpec[] = [
     positionals: [],
     args: {
       ...COMMON_ARGS,
-      orphans: { kind: 'boolean', description: '고아 상태만 보여줍니다' },
+      orphans: { kind: 'boolean', description: '연결이 끊긴 상태만 보여줍니다' },
       sort: {
         kind: 'string',
         description: '정렬 기준',
@@ -74,7 +74,7 @@ export const COMMANDS: CommandSpec[] = [
   },
   {
     name: 'doctor',
-    summary: '고아가 된 상태를 찾고 어디로 갔는지 추측합니다',
+    summary: '연결이 끊긴 상태를 찾아내고 어디로 옮겨졌는지 추정합니다',
     positionals: [],
     args: COMMON_ARGS,
   },

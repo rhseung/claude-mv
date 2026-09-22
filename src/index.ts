@@ -42,7 +42,7 @@ async function main(argv: string[]): Promise<number> {
   }
 
   const spec = findCommand(command);
-  if (!spec) throw new CliError(`모르는 명령입니다: ${command}`, 'usage');
+  if (!spec) throw new CliError(`알 수 없는 명령입니다: ${command}`, 'usage');
 
   const parsed = parseArgs(spec, rest);
 
@@ -66,7 +66,10 @@ async function main(argv: string[]): Promise<number> {
   });
 
   if (mode === 'json' && isMutating(command) && !bool(parsed, 'yes')) {
-    throw new CliError('--json 으로 실행할 때는 --yes 가 필요합니다. 물어볼 수 없습니다.', 'usage');
+    throw new CliError(
+      '--json으로 실행할 때는 --yes가 필요합니다. 확인을 물을 수 없기 때문입니다.',
+      'usage',
+    );
   }
 
   const reporter: Reporter =
@@ -210,7 +213,7 @@ async function needTarget(
   });
 
   if (picker === 'none') {
-    throw new CliError(`claude-mv ${command} <프로젝트> 가 필요합니다.`, 'usage');
+    throw new CliError(`claude-mv ${command} <프로젝트>가 필요합니다.`, 'usage');
   }
 
   const candidates = projectCandidates(ctx);
@@ -222,7 +225,7 @@ async function needTarget(
         })
       : null;
 
-  if (!picked) throw new CliError('고르지 않았습니다.', 'usage');
+  if (!picked) throw new CliError('대상을 선택하지 않았습니다.', 'usage');
   return picked;
 }
 

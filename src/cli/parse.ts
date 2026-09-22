@@ -44,7 +44,7 @@ export function parseArgs(spec: CommandSpec, argv: string[]): ParsedArgs {
       }
     }
 
-    if (!arg) throw new CliError(`모르는 옵션입니다: ${token}`, 'usage');
+    if (!arg) throw new CliError(`알 수 없는 옵션입니다: ${token}`, 'usage');
 
     if (arg.kind === 'boolean') {
       flags[name] = inlineValue === undefined ? true : inlineValue !== 'false';
@@ -52,10 +52,10 @@ export function parseArgs(spec: CommandSpec, argv: string[]): ParsedArgs {
     }
 
     const value = inlineValue ?? argv[++i];
-    if (value === undefined) throw new CliError(`${token} 에 값이 필요합니다.`, 'usage');
+    if (value === undefined) throw new CliError(`${token}에 값이 필요합니다.`, 'usage');
 
     if (arg.values && !arg.values.includes(value)) {
-      throw new CliError(`${token} 는 ${arg.values.join(' | ')} 중 하나여야 합니다.`, 'usage');
+      throw new CliError(`${token}은 ${arg.values.join(' | ')} 중 하나여야 합니다.`, 'usage');
     }
     flags[name] = value;
   }
@@ -76,7 +76,7 @@ export function requirePositionals(spec: CommandSpec, parsed: ParsedArgs): strin
   const required = spec.positionals.filter((p) => p.required);
   if (parsed.positionals.length < required.length) {
     throw new CliError(
-      `${spec.name} 에는 ${required.map((p) => `<${p.name}>`).join(' ')} 가 필요합니다.`,
+      `${spec.name}에는 ${required.map((p) => `<${p.name}>`).join(' ')}가 필요합니다.`,
       'usage',
     );
   }

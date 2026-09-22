@@ -76,7 +76,7 @@ describe('rm', () => {
         yes: true,
         force: false,
       }),
-    ).rejects.toThrow(/아직 있습니다/);
+    ).rejects.toThrow(/아직 존재합니다/);
   });
 
   it('--force 면 상태를 지우고 config 키까지 들어낸다', async () => {

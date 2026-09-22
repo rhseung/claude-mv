@@ -98,7 +98,7 @@ async function main(): Promise<void> {
     JSON.stringify({
       systemMessage: [
         'claude-mv: 이 디렉터리에는 Claude 프로젝트 기록이 없습니다.',
-        `  ${candidate} 의 기록이 남아 있고, 그 경로는 지금 없습니다.`,
+        `  ${candidate}의 기록이 남아 있는데, 그 경로는 현재 존재하지 않습니다.`,
         `  옮긴 것이라면:  npx @rhseung/claude-mv --state-only "${candidate}" "${cwd}"`,
         '  먼저 확인하려면:  npx @rhseung/claude-mv doctor',
       ].join('\n'),

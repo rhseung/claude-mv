@@ -95,7 +95,7 @@ async function main() {
     JSON.stringify({
       systemMessage: [
         "claude-mv: \uC774 \uB514\uB809\uD130\uB9AC\uC5D0\uB294 Claude \uD504\uB85C\uC81D\uD2B8 \uAE30\uB85D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.",
-        `  ${candidate} \uC758 \uAE30\uB85D\uC774 \uB0A8\uC544 \uC788\uACE0, \uADF8 \uACBD\uB85C\uB294 \uC9C0\uAE08 \uC5C6\uC2B5\uB2C8\uB2E4.`,
+        `  ${candidate}\uC758 \uAE30\uB85D\uC774 \uB0A8\uC544 \uC788\uB294\uB370, \uADF8 \uACBD\uB85C\uB294 \uD604\uC7AC \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.`,
         `  \uC62E\uAE34 \uAC83\uC774\uB77C\uBA74:  npx @rhseung/claude-mv --state-only "${candidate}" "${cwd}"`,
         "  \uBA3C\uC800 \uD655\uC778\uD558\uB824\uBA74:  npx @rhseung/claude-mv doctor"
       ].join("\n")

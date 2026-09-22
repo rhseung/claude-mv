@@ -83,7 +83,7 @@ export function runBackupOnly(
   opts: { target: string; home: string; version: string },
 ): ExitCodeName {
   const project = findProject(ctx, opts.target, opts.home);
-  if (!project) throw new CliError(`아는 프로젝트가 아닙니다: ${opts.target}`, 'usage');
+  if (!project) throw new CliError(`등록된 프로젝트가 아닙니다: ${opts.target}`, 'usage');
 
   const root = backupRoot(ctx.env.toolDir);
   mkdirSync(root, { recursive: true });
@@ -134,7 +134,7 @@ export function runBackupOnly(
 
   seal(handle);
   reporter.note(`백업 ${backupId}`);
-  reporter.note(`되돌리기  claude-mv rollback ${backupId}`);
+  reporter.note(`복구하려면  claude-mv rollback ${backupId}`);
   return 'ok';
 }
 
@@ -144,12 +144,12 @@ export async function runRemove(
   opts: { target: string; home: string; version: string; yes: boolean; force: boolean },
 ): Promise<ExitCodeName> {
   const project = findProject(ctx, opts.target, opts.home);
-  if (!project) throw new CliError(`아는 프로젝트가 아닙니다: ${opts.target}`, 'usage');
+  if (!project) throw new CliError(`등록된 프로젝트가 아닙니다: ${opts.target}`, 'usage');
 
   const path = project.primaryCwd;
   if (path && ctx.exists(path) && !opts.force) {
     throw new CliError(
-      `${path} 는 아직 있습니다. 정말 상태만 지우려면 --force 를 쓰세요.`,
+      `${path}는 아직 존재합니다. 상태만 삭제하려면 --force를 사용하세요.`,
       'precondition',
     );
   }
@@ -192,7 +192,7 @@ export async function runRemove(
     rmSync(join(ctx.env.cacheRoot, project.dirName), { recursive: true, force: true });
   }
 
-  reporter.note(`지웠습니다. 되돌리기  claude-mv rollback ${backupId}`);
+  reporter.note(`삭제했습니다. 복구하려면  claude-mv rollback ${backupId}`);
   return 'ok';
 }
 
@@ -203,8 +203,8 @@ export function runMerge(
 ): ExitCodeName {
   const from = findProject(ctx, opts.from, opts.home);
   const to = findProject(ctx, opts.to, opts.home);
-  if (!from) throw new CliError(`아는 프로젝트가 아닙니다: ${opts.from}`, 'usage');
-  if (!to) throw new CliError(`아는 프로젝트가 아닙니다: ${opts.to}`, 'usage');
+  if (!from) throw new CliError(`등록된 프로젝트가 아닙니다: ${opts.from}`, 'usage');
+  if (!to) throw new CliError(`등록된 프로젝트가 아닙니다: ${opts.to}`, 'usage');
 
   let moved = 0;
   for (const entry of readdirSync(from.dirPath, { withFileTypes: true })) {
@@ -212,7 +212,7 @@ export function runMerge(
     const target = join(to.dirPath, entry.name);
 
     if (existsSync(target)) {
-      reporter.warn(`이미 있습니다, 건너뜁니다: ${entry.name}`);
+      reporter.warn(`이미 존재해서 건너뜁니다: ${entry.name}`);
       continue;
     }
     renameSync(source, target);
@@ -221,7 +221,7 @@ export function runMerge(
 
   reporter.note(`${moved}개 항목을 옮겼습니다.`);
   if (readdirSync(from.dirPath).length === 0) rmSync(from.dirPath, { recursive: true });
-  else reporter.warn(`${from.dirPath} 가 비지 않아 남겨둡니다.`);
+  else reporter.warn(`${from.dirPath}가 비어 있지 않아 그대로 둡니다.`);
 
   return 'ok';
 }

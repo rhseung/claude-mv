@@ -36,7 +36,7 @@ export function runExport(
   opts: { target: string; out?: string; home: string },
 ): ExitCodeName {
   const project = findProject(ctx, opts.target, opts.home);
-  if (!project) throw new CliError(`아는 프로젝트가 아닙니다: ${opts.target}`, 'usage');
+  if (!project) throw new CliError(`등록된 프로젝트가 아닙니다: ${opts.target}`, 'usage');
 
   const bundle: Bundle = {
     version: 1,
@@ -55,7 +55,7 @@ export function runExport(
   tar.create({ gzip: true, file: out, sync: true, cwd: staging }, [MANIFEST, 'projects']);
   rmSync(staging, { recursive: true, force: true });
 
-  reporter.note(`${out} 에 저장했습니다.`);
+  reporter.note(`${out}에 저장했습니다.`);
   return 'ok';
 }
 
@@ -65,7 +65,7 @@ export function readBundle(file: string): Bundle {
 
   const manifestPath = join(staging, MANIFEST);
   if (!existsSync(manifestPath)) {
-    throw new CliError('claude-mv 로 만든 번들이 아닙니다.', 'usage');
+    throw new CliError('claude-mv로 만든 번들이 아닙니다.', 'usage');
   }
   return JSON.parse(readFileSync(manifestPath, 'utf8')) as Bundle;
 }
@@ -86,7 +86,7 @@ export function runImport(
   const destination = join(ctx.env.projectsDir, bundle.dirName);
   if (existsSync(destination)) {
     throw new CliError(
-      `이미 있는 상태를 덮어쓰지 않습니다: ${bundle.dirName}. merge 를 쓰세요.`,
+      `이미 존재하는 상태를 덮어쓰지 않습니다: ${bundle.dirName}. merge를 사용하세요.`,
       'conflict',
     );
   }
@@ -95,11 +95,11 @@ export function runImport(
   cpSync(source, destination, { recursive: true });
   rmSync(staging, { recursive: true, force: true });
 
-  reporter.note(`${bundle.originalPath} 의 상태를 들여왔습니다.`);
+  reporter.note(`${bundle.originalPath}의 상태를 들여왔습니다.`);
 
   if (!opts.to) return { code: 'ok' };
 
   const to = normalizePath(opts.to, { platform: ctx.platform, home: opts.home, realpath: false });
-  reporter.note(`이어서 ${bundle.originalPath} -> ${to} 로 이관합니다.`);
+  reporter.note(`이어서 ${bundle.originalPath}에서 ${to}로 이관합니다.`);
   return { code: 'ok', migrateFrom: bundle.originalPath, migrateTo: to };
 }

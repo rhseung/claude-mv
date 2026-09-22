@@ -48,7 +48,7 @@ export function runInfo(
   opts: { target: string; home: string },
 ): ExitCodeName {
   const project = findProject(ctx, opts.target, opts.home);
-  if (!project) throw new CliError(`아는 프로젝트가 아닙니다: ${opts.target}`, 'usage');
+  if (!project) throw new CliError(`등록된 프로젝트가 아닙니다: ${opts.target}`, 'usage');
 
   reporter.info(project);
   return project.health === 'orphaned' ? 'orphans' : 'ok';

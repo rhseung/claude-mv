@@ -42,7 +42,7 @@ export async function runMove(
   const src = pickKnown(ctx, [norm(opts.src), norm(opts.src, false)]);
   const dst = norm(opts.dst, false);
 
-  if (src === dst) throw new CliError('src 와 dst 가 같습니다.', 'usage');
+  if (src === dst) throw new CliError('src와 dst가 같습니다.', 'usage');
 
   const request: MoveRequest = {
     src,
@@ -171,13 +171,13 @@ function blockerExit(plan: MigrationPlan): ExitCodeName {
 function describeBlocker(blocker: MigrationPlan['blockers'][number]): string {
   switch (blocker.kind) {
     case 'locked':
-      return `claude 세션이 이 경로를 쓰고 있습니다 (pid ${blocker.sessions.map((s) => s.pid).join(', ')}). 세션을 닫고 다시 실행하세요.`;
+      return `claude 세션이 이 경로를 사용하고 있습니다 (pid ${blocker.sessions.map((s) => s.pid).join(', ')}). 세션을 종료한 뒤 다시 실행하세요.`;
     case 'dst-project-dir-exists':
       return `대상 경로의 project 디렉터리가 이미 있습니다: ${blocker.dirName}`;
     case 'dst-config-key-exists':
-      return `claude.json 에 대상 경로 키가 이미 있습니다: ${blocker.key}`;
+      return `claude.json에 대상 경로 키가 이미 있습니다: ${blocker.key}`;
     case 'src-missing':
-      return '원본 디렉터리가 없습니다. 이미 옮겼다면 --state-only 를 쓰세요.';
+      return '원본 디렉터리가 없습니다. 이미 옮겼다면 --state-only를 사용하세요.';
     case 'dst-inside-src':
       return '대상 경로가 원본 안에 있습니다.';
   }
