@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
+import pkg from '../package.json' with { type: 'json' };
 import { findCommand, dispatch } from './cli/commands.js';
 import { complete, formatCandidates, type Candidate } from './cli/complete.js';
 import { completionScript, type Shell } from './cli/completion/index.js';
@@ -21,11 +22,9 @@ import { resolveRenderMode, type Reporter } from './render/reporter.js';
 import { createContext, type AppContext } from './shared/context.js';
 import { readCliEnv, type CliEnv } from './shared/env.js';
 
-const VERSION = '0.1.0';
-
 async function main(argv: string[]): Promise<number> {
   if (argv.includes('--version') || argv.includes('-v')) {
-    process.stdout.write(`${VERSION}\n`);
+    process.stdout.write(`${pkg.version}\n`);
     return ExitCode.ok;
   }
 
@@ -47,7 +46,6 @@ async function main(argv: string[]): Promise<number> {
 
   const parsed = parseArgs(spec, rest);
 
-  // completion 은 상태를 읽을 필요가 없다. 셸 시작마다 도는 자리라 빨라야 한다.
   if (command === 'completion') {
     const [shell] = requirePositionals(spec, parsed);
     if (!['zsh', 'bash', 'fish'].includes(shell!)) {
@@ -71,11 +69,9 @@ async function main(argv: string[]): Promise<number> {
     throw new CliError('--json 으로 실행할 때는 --yes 가 필요합니다. 물어볼 수 없습니다.', 'usage');
   }
 
-  // ink 는 여기서만, 그것도 동적으로 불러온다. --json 과 비TTY 경로가 React 와
-  // 터미널 드라이버를 끌어오면 파이프 출력이 더러워지고 시작이 그만큼 느려진다.
   const reporter: Reporter =
     mode === 'json'
-      ? new JsonReporter(process.stdout, process.stderr, VERSION)
+      ? new JsonReporter(process.stdout, process.stderr, pkg.version)
       : mode === 'ink'
         ? (await import('./render/ink/reporter.js')).createInkReporter()
         : new PlainReporter();
@@ -117,7 +113,7 @@ async function run(
         allowAncestors: bool(parsed, 'allow-ancestors'),
         skipLive: bool(parsed, 'skip-live'),
         home,
-        version: VERSION,
+        version: pkg.version,
       });
     }
 
@@ -140,7 +136,7 @@ async function run(
       return await runRemove(ctx, reporter, {
         target: await needTarget(ctx, parsed, mode, 'rm', cliEnv),
         home,
-        version: VERSION,
+        version: pkg.version,
         yes: bool(parsed, 'yes'),
         force: bool(parsed, 'force'),
       });
@@ -154,7 +150,7 @@ async function run(
       return runBackupOnly(ctx, reporter, {
         target: await needTarget(ctx, parsed, mode, 'backup', cliEnv),
         home,
-        version: VERSION,
+        version: pkg.version,
       });
 
     case 'rollback': {
@@ -175,7 +171,6 @@ async function run(
       const result = runImport(ctx, reporter, { file: file!, to: str(parsed, 'to'), home });
       if (!result.migrateFrom || !result.migrateTo) return result.code;
 
-      // 머신이 바뀌면 홈 경로도 바뀌므로 푸는 것만으로는 끝나지 않는다. mv 엔진을 그대로 탄다.
       const fresh = await createContext({ claudeHome: str(parsed, 'claude-home') });
       return await runMove(fresh, reporter, {
         src: result.migrateFrom,
@@ -189,7 +184,7 @@ async function run(
         allowAncestors: false,
         skipLive: false,
         home,
-        version: VERSION,
+        version: pkg.version,
       });
     }
 
@@ -198,7 +193,6 @@ async function run(
   }
 }
 
-/** 인자를 생략했으면 목록에서 고르게 한다. 고를 수 없는 환경이면 사용법 오류다. */
 async function needTarget(
   ctx: AppContext,
   parsed: ParsedArgs,
@@ -240,7 +234,6 @@ function projectCandidates(ctx: AppContext): Candidate[] {
 }
 
 async function runComplete(words: string[]): Promise<number> {
-  // 자동완성은 셸이 TAB 마다 부른다. 실패해도 조용히 끝내야 입력이 막히지 않는다.
   try {
     const ctx = await createContext();
     const root = backupRoot(ctx.env.toolDir);
@@ -255,9 +248,7 @@ async function runComplete(words: string[]): Promise<number> {
         }),
       )}\n`,
     );
-  } catch {
-    // 후보를 못 주는 것과 셸을 멈추는 것은 전혀 다른 일이다.
-  }
+  } catch {}
   return ExitCode.ok;
 }
 
