@@ -1,4 +1,5 @@
 import { COMMANDS, findCommand } from './commands.js';
+import { exitCodeTable } from './exit.js';
 
 export function helpText(commandName?: string): string {
   const spec = commandName ? findCommand(commandName) : undefined;
@@ -35,8 +36,7 @@ function rootHelp(): string {
     ...COMMANDS.map((c) => `  ${c.name.padEnd(width + 2)}${c.summary}`),
     '',
     '종료 코드',
-    '  0 성공   2 사용법   10 --dry-run 계획   11 고아 발견   20 lock',
-    '  21 충돌   30 실패(되돌림)   31 실패(수동 복구 필요)',
+    ...exitCodeTable.map(([code, why]) => `  ${String(code).padStart(3)}  ${why}`),
     '',
     '자동완성  eval "$(claude-mv completion zsh)"',
     '',
