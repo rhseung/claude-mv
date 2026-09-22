@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { mangle } from '../src/core/mangle.js';
 import { isUnder, normalizePath, pathEquals, reparent } from '../src/core/paths.js';
 
 const posix = { platform: 'linux' as const, home: '/home/me', realpath: false as const };
@@ -108,5 +109,26 @@ describe('reparent 상대 경로', () => {
     expect(
       reparent('.local/share/chezmoi/Brewfile', '/a/old', '/a/new', 'sensitive', 'linux'),
     ).toBeUndefined();
+  });
+});
+
+describe('윈도우에서 손으로 처리해야 하는 것', () => {
+  it('드라이브 문자 대소문자가 서로 다른 디렉터리 이름을 만든다', () => {
+    // path.win32.resolve 는 드라이브 문자를 정규화하지 않는다. 어떤 경로 패키지도
+    // 해주지 않는다. 그냥 두면 c: 로 친 사용자와 C: 로 기록된 상태가 영영 안 만난다.
+    expect(mangle('C:\\Users\\x')).not.toBe(mangle('c:\\Users\\x'));
+    expect(normalizePath('c:\\Users\\x', win)).toBe('C:\\Users\\x');
+    expect(mangle(normalizePath('c:/Users/x', win))).toBe(mangle('C:\\Users\\x'));
+  });
+
+  it('슬래시와 백슬래시는 mangle 결과가 같아서 위험하지 않다', () => {
+    // 둘 다 대시 하나가 된다. posix 로 정규화하는 패키지를 써도 이 부분은 깨지지 않는다.
+    expect(mangle('C:/Users/x')).toBe(mangle('C:\\Users\\x'));
+  });
+
+  it('\\\\?\\ 접두사는 mangle 을 완전히 바꾼다', () => {
+    // 이건 진짜 위험하다. 떼어내지 않으면 전혀 다른 디렉터리를 가리킨다.
+    expect(mangle('\\\\?\\C:\\Users\\x')).not.toBe(mangle('C:\\Users\\x'));
+    expect(normalizePath('\\\\?\\C:\\Users\\x', win)).toBe('C:\\Users\\x');
   });
 });
