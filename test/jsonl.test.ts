@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { records, writeTranscript } from './fixtures/transcript.js';
-import { censusTranscript, rewriteTranscript } from '../src/core/jsonl.js';
+import {
+  censusTranscript,
+  ConcurrentModificationError,
+  rewriteTranscript,
+} from '../src/core/jsonl.js';
 import { reparent } from '../src/core/paths.js';
 
 const OLD = '/Users/me/dev/old-name';
@@ -126,5 +130,20 @@ describe('censusTranscript', () => {
     const { file } = writeTranscript([records.withSnapshot(OLD)]);
     const census = await censusTranscript(file);
     expect([...census.paths.keys()]).not.toContain('.zshrc');
+  });
+});
+
+describe('동시 수정', () => {
+  it('읽는 동안 파일이 바뀌면 조용히 덮지 않고 실패한다', async () => {
+    const { file } = writeTranscript([records.user(OLD)]);
+    const { appendFileSync } = await import('node:fs');
+
+    // 라이브 세션이 덧붙이는 상황. 그대로 rename 하면 이 줄이 사라진다.
+    const racing = (value: string) => {
+      appendFileSync(file, `${JSON.stringify(records.user(OLD))}\n`);
+      return reparent(value, OLD, NEW, 'sensitive', 'linux');
+    };
+
+    await expect(rewriteTranscript(file, racing)).rejects.toThrow(ConcurrentModificationError);
   });
 });

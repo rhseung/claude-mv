@@ -152,6 +152,13 @@ export async function censusTranscript(
   return census;
 }
 
+export class ConcurrentModificationError extends Error {
+  constructor(readonly file: string) {
+    super(`재작성하는 동안 파일이 바뀌었습니다: ${file}`);
+    this.name = 'ConcurrentModificationError';
+  }
+}
+
 export type RewriteResult = {
   linesTotal: number;
   linesChanged: number;
@@ -194,6 +201,11 @@ export async function rewriteJsonl(
     dirname(filePath),
     `${filePath.split('/').pop()}.claude-mv-${opts?.stagingSuffix ?? 'tmp'}`,
   );
+
+  // 라이브 세션이 쓰고 있는 파일일 수 있다. 읽는 동안 덧붙은 줄은 우리 스테이징 파일에
+  // 없으므로, 그대로 rename 하면 그 줄들이 조용히 사라진다. 읽기 전후의 상태를 비교해서
+  // 소리 없이 잃는 대신 깨끗하게 실패시킨다.
+  const before = await stat(filePath);
 
   const hashIn = createHash('sha256');
   const hashOut = createHash('sha256');
@@ -254,6 +266,15 @@ export async function rewriteJsonl(
     await new Promise<void>((resolve, reject) => {
       out.end((err?: Error | null) => (err ? reject(err) : resolve()));
     });
+
+    const after = await stat(filePath);
+    if (
+      after.size !== before.size ||
+      after.mtimeMs !== before.mtimeMs ||
+      after.ino !== before.ino
+    ) {
+      throw new ConcurrentModificationError(filePath);
+    }
 
     // 스테이징 파일이 디스크에 확실히 닿은 뒤에야 커밋할 수 있다.
     const handle = await open(staging, 'r+');
