@@ -8,10 +8,11 @@ import { apply, backupRoot } from '../core/apply.js';
 import { createBackup } from '../core/backup.js';
 import { Journal } from '../core/journal.js';
 import { checkLocks } from '../core/lock.js';
+import { Migration } from '../core/migration.js';
 import { normalizePath, pathEquals } from '../core/paths.js';
-import { buildPlan, type MigrationPlan, type MoveRequest } from '../core/plan.js';
 import { rollback } from '../core/rollback.js';
 
+import type { MigrationPlan, MoveRequest } from '../core/plan.js';
 import type { Reporter } from '../render/reporter.js';
 import type { AppContext } from '../shared/context.js';
 
@@ -38,12 +39,6 @@ export async function runMove(
   const norm = (value: string, realpath = true): string =>
     normalizePath(value, { platform: ctx.platform, home: opts.home, realpath });
 
-  // 심볼릭 링크를 어떻게 다룰지가 갈린다. Claude Code 는 process.cwd() 를 저장하는데
-  // 그건 링크가 풀린 값이다. 그래서 기본은 realpath 다.
-  //
-  // 그런데 사용자가 링크 쪽 경로를 칠 수도 있고, 실제로 macOS 의 /var 는
-  // /private/var 로 풀린다. 둘 중 상태에 실제로 있는 쪽을 쓴다 - 없는 쪽을 고집하면
-  // "옮길 게 없다" 고 끝나버린다.
   const src = pickKnown(ctx, [norm(opts.src), norm(opts.src, false)]);
   const dst = norm(opts.dst, false);
 
@@ -52,7 +47,6 @@ export async function runMove(
   const request: MoveRequest = {
     src,
     dst,
-    // src 가 이미 없고 dst 가 있으면 손으로 옮긴 뒤다. 굳이 --state-only 를 요구하지 않는다.
     stateOnly: opts.stateOnly || (!ctx.exists(src) && ctx.exists(dst)),
     rewriteProse: opts.rewriteProse,
     policy: ctx.policy,
@@ -67,26 +61,23 @@ export async function runMove(
     allowAncestors: opts.allowAncestors,
   });
 
-  const plan = buildPlan(request, {
+  const migration = Migration.prepare(request, {
     index: ctx.index,
     configPath: ctx.env.configPath,
     historyPath: ctx.env.historyPath,
     projectsDir: ctx.env.projectsDir,
     plansDir: ctx.env.plansDir,
     cacheRoot: ctx.env.cacheRoot,
+    toolDir: ctx.env.toolDir,
     fileExists: ctx.exists,
     srcExists: ctx.exists(src),
     dstExists: ctx.exists(dst),
-    // force 는 "막지 말라" 는 뜻이지 "살아 있지 않다" 는 뜻이 아니다. 건너뛸 대상을
-    // 고르려면 살아 있다는 사실 자체는 알아야 한다.
-    liveSessions: locks.findings.filter((f) => f.verdict !== 'stale').map((f) => f.session),
-    blockingSessions: opts.force ? [] : locks.blocking.map((f) => f.session),
+    locks: opts.force ? { findings: locks.findings, blocking: [] } : locks,
     skipLiveTranscripts: opts.skipLive,
   });
+  const plan = migration.plan;
 
-  // 막는 lock 은 blocker 로 다시 나온다. 여기서는 막지 않는 것만 알려준다
-  // (죽은 세션, --allow-ancestors 로 통과시킨 상위 세션).
-  const informational = locks.findings.filter((f) => !locks.blocking.includes(f));
+  const informational = locks.findings.filter((finding) => !locks.blocking.includes(finding));
   if (informational.length > 0) reporter.locks({ findings: informational, blocking: [] });
 
   if (plan.warnings.some((w) => w.kind === 'nothing-to-do')) {
@@ -97,8 +88,6 @@ export async function runMove(
 
   if (opts.dryRun || plan.blockers.length > 0) {
     reporter.plan(plan, { backupId: null, dryRun: true });
-    // 막히는 이유는 dry-run 에서도 보여야 한다. 계획만 보고 실행했다가 거부당하면
-    // 왜 막혔는지 두 번 찾아봐야 한다.
     for (const blocker of plan.blockers) reporter.warn(describeBlocker(blocker));
     if (plan.blockers.length > 0) return blockerExit(plan);
     return 'planned';
@@ -158,7 +147,6 @@ export async function runMove(
   return reverted.ok ? 'failedRolledBack' : 'failedDirty';
 }
 
-/** 후보 중 Claude 가 실제로 알고 있는 경로를 고른다. 없으면 첫 번째(realpath)를 쓴다. */
 function pickKnown(ctx: AppContext, candidates: string[]): string {
   for (const candidate of candidates) {
     const known =
