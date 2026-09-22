@@ -22,5 +22,4 @@ jobs:
       - run: bun run build
       - run: bun run sync:version --check
       - run: git diff --exit-code plugin/hooks/session-start.mjs
-      # OIDC 와 provenance 는 npm CLI 기능이라 bun publish 를 쓰지 않는다. npm 11.5.1+ 필요.
       - run: npm publish --access public --provenance

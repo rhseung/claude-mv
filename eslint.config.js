@@ -6,8 +6,6 @@ import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-// ink 는 React 런타임과 터미널 드라이버를 통째로 끌고 온다. SessionStart 훅과 --json 경로가
-// 이걸 건드리면 훅이 수십 ms 느려지고 파이프 출력이 ANSI 로 더러워진다. 문서로만 두면 깨진다.
 const NO_UI_DEPS = {
   patterns: [
     {
@@ -66,9 +64,6 @@ export default [
   },
 
   {
-    // 훅은 SessionStart 마다 돈다. 무거운 걸 끌어오면 모든 세션 시작이 그만큼 느려지고,
-    // 단독 .mjs 로 번들되므로 의존성이 그대로 번들 크기가 된다.
-    // 실제 크기 상한은 test/hook-bundle.test.ts 가 지킨다 - 이건 눈에 띄는 것만 막는 1 차 방어다.
     files: ['src/hook/**/*.ts'],
     rules: {
       'no-restricted-imports': [
@@ -97,18 +92,12 @@ export default [
   },
 
   {
-    // 경로 해석이 테스트에서 진짜 홈 디렉터리로 새는 걸 막는다. 실수 하나가 사용자의
-    // ~/.claude 를 건드리는 도구라 컨벤션으로 두지 않는다.
     files: ['src/**/*.ts', 'test/**/*.ts'],
-    // src/hook 은 의존성 0 으로 단독 .mjs 번들이 되어야 해서 shared/env.ts 를
-    // import 할 수 없다 (그쪽은 env-paths 를 끌어온다). 그래서 환경을 직접 읽는다.
     ignores: ['src/shared/env.ts', 'src/hook/**/*.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
-          // TZ 는 뺀다. 이 규칙은 경로 해석이 진짜 홈으로 새는 걸 막으려는 것이고,
-          // 타임존은 procStart 를 UTC 로 읽는지 확인하는 테스트에 필요하다.
           selector:
             'MemberExpression[object.object.name="process"][object.property.name="env"][property.name!="TZ"]',
           message: 'process.env 는 src/shared/env.ts 에서만 읽습니다. 값은 인자로 받으세요.',

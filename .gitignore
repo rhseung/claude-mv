@@ -1,6 +1,3 @@
 node_modules
 dist
 coverage
-
-# plugin/hooks/session-start.mjs 는 일부러 커밋한다. 플러그인 설치는 빌드 단계가 없는
-# git clone 이라, 무시하면 훅이 빠진 플러그인이 배포된다. CI 가 소스와의 동기화를 검사한다.

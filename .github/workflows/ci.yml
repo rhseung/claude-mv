@@ -27,9 +27,6 @@ jobs:
           install_args: --locked
       - run: bun install --frozen-lockfile
       - run: bun run verify
-
-      # 훅 번들은 산출물인데도 커밋한다. 플러그인 설치는 빌드 단계 없는 git clone 이라,
-      # 소스만 고치고 빌드를 잊으면 사용자는 옛 훅을 계속 받는다.
       - name: 훅 번들이 소스와 어긋남
         if: matrix.os == 'ubuntu-latest'
         run: bun run build && git diff --exit-code plugin/hooks/session-start.mjs
@@ -37,9 +34,6 @@ jobs:
       - name: plugin.json 버전이 package.json 과 어긋남
         if: matrix.os == 'ubuntu-latest'
         run: bun run sync:version --check
-
-      # 생성된 completion 이 실제로 문법에 맞는지. 이 검사가 없으면 깨진 completion 이
-      # 오래 남아도 아무도 모른다.
       - name: zsh completion 문법 검사
         if: matrix.os == 'ubuntu-latest'
         run: |
