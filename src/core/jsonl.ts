@@ -3,7 +3,14 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import { chmod, open, rename, stat, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { visitCwdFields, visitPaths, type PathVisitor, type VisitOptions } from './fields.js';
+import {
+  visitCwdFields,
+  visitPaths,
+  extractPaths,
+  visitProsePaths,
+  type PathVisitor,
+  type VisitOptions,
+} from './fields.js';
 
 const LF = 0x0a;
 
@@ -71,6 +78,12 @@ export type TranscriptCensus = {
    * paths 에는 플랜 경로나 attachment 경로가 섞여 있어서 그 판정에 쓸 수 없다.
    */
   cwds: Map<string, number>;
+  /**
+   * 서술 필드(대화 본문, 툴 출력)에만 나온 경로별 줄 수.
+   * 기본으로는 고치지 않지만, 계획 화면에서 "이만큼은 그대로 둡니다" 를 정직하게
+   * 보여주려면 실제로 세어야 한다.
+   */
+  prose: Map<string, number>;
   /** 경로 필드가 아예 없는 레코드 수. 전체의 40% 가량은 정상이다. */
   pathless: number;
   /** JSON 으로 파싱되지 않은 줄의 인덱스. 잘린 마지막 줄은 정상이다. */
@@ -87,6 +100,7 @@ export async function censusTranscript(
     bytes: (await stat(filePath)).size,
     paths: new Map(),
     cwds: new Map(),
+    prose: new Map(),
     pathless: 0,
     malformed: [],
   };
@@ -113,14 +127,24 @@ export async function censusTranscript(
       return undefined;
     };
 
+    const proseOnThisLine = new Set<string>();
+
     visitPaths(record, collect(onThisLine), opts);
     visitCwdFields(record, collect(cwdsOnThisLine));
+    // 서술 필드는 문장 가운데 경로가 박혀 있어서 값 전체를 보면 못 잡는다.
+    visitProsePaths(record, (value) => {
+      for (const path of extractPaths(value)) proseOnThisLine.add(path);
+      return undefined;
+    });
 
     for (const value of onThisLine) {
       census.paths.set(value, (census.paths.get(value) ?? 0) + 1);
     }
     for (const value of cwdsOnThisLine) {
       census.cwds.set(value, (census.cwds.get(value) ?? 0) + 1);
+    }
+    for (const value of proseOnThisLine) {
+      census.prose.set(value, (census.prose.get(value) ?? 0) + 1);
     }
     if (onThisLine.size === 0) census.pathless++;
   }

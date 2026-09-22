@@ -204,3 +204,42 @@ export function collectPaths(record: unknown, opts?: VisitOptions): string[] {
   );
   return found;
 }
+
+/**
+ * 문자열 안에 박힌 절대 경로를 뽑아낸다.
+ *
+ * 서술 필드는 구조 필드와 성격이 다르다. `cwd` 는 값 전체가 경로지만, 대화 본문은
+ * "cd /Users/me/proj 했습니다" 처럼 문장 가운데 경로가 들어간다. 값 전체만 보면
+ * 하나도 못 잡는다.
+ */
+const PATH_LIKE = /(?:[A-Za-z]:[\\/]|\/|\\\\)[^\s"'`,;:()[\]{}]*/g;
+
+export function extractPaths(value: string): string[] {
+  return value.match(PATH_LIKE) ?? [];
+}
+
+/**
+ * 서술 필드 안의 경로를 부분 문자열로 치환한다.
+ *
+ * 경계를 봐야 한다. `/src` 를 그냥 바꾸면 `/src-backup` 의 앞부분까지 바뀐다.
+ * 뒤따르는 문자가 경로 구분자이거나 경로가 끝나는 자리일 때만 바꾼다.
+ */
+export function replacePathIn(value: string, from: string, to: string): string {
+  let out = '';
+  let index = 0;
+
+  for (;;) {
+    const found = value.indexOf(from, index);
+    if (found === -1) {
+      out += value.slice(index);
+      return out;
+    }
+
+    const after = value[found + from.length];
+    const isBoundary =
+      after === undefined || after === '/' || after === '\\' || !/[\w.-]/.test(after);
+
+    out += value.slice(index, found) + (isBoundary ? to : from);
+    index = found + from.length;
+  }
+}

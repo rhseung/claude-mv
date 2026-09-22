@@ -6,6 +6,7 @@ import writeFileAtomic from 'write-file-atomic';
 
 import { seal, type BackupHandle } from './backup.js';
 import { applyEdits, planConfigEdits } from './config-edit.js';
+import { replacePathIn } from './fields.js';
 import { type Journal } from './journal.js';
 import { commitStaged, rewriteJsonl, rewriteTranscript } from './jsonl.js';
 import { reparent } from './paths.js';
@@ -148,7 +149,14 @@ function needsStaging(step: PlanStep): boolean {
 
 async function stage(step: PlanStep, plan: MigrationPlan, dryRun: boolean): Promise<Staged | null> {
   const { src, dst, policy, platform, rewriteProse } = plan.request;
-  const map = (value: string): string | undefined => reparent(value, src, dst, policy, platform);
+  const map = (value: string): string | undefined => {
+    const whole = reparent(value, src, dst, policy, platform);
+    if (whole !== undefined) return whole;
+    if (!rewriteProse || !value.includes(src)) return undefined;
+    // 서술 필드는 문장 가운데 경로가 박혀 있다. 경계를 보고 부분 치환한다.
+    const replaced = replacePathIn(value, src, dst);
+    return replaced === value ? undefined : replaced;
+  };
 
   switch (step.kind) {
     case 'rewrite-transcript': {

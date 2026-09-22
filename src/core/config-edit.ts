@@ -1,4 +1,4 @@
-import { parseTree, type Node } from 'jsonc-parser';
+import { modify, parseTree, type Node } from 'jsonc-parser';
 
 import { reparent, type CasePolicy } from './paths.js';
 
@@ -71,4 +71,18 @@ export function applyEdits(text: string, edits: ConfigEdit[]): string {
     out = out.slice(0, edit.offset) + edit.replacement + out.slice(edit.offset + edit.length);
   }
   return out;
+}
+
+/**
+ * `projects` 에서 키 하나를 통째로 들어낸다.
+ *
+ * 키를 바꾸는 것과 달리 삭제는 쉼표와 앞뒤 공백까지 같이 정리해야 해서 직접 자르면
+ * 깨진 JSON 이 나온다. jsonc-parser 의 modify 가 그 경계를 계산해 준다.
+ */
+export function planConfigRemoval(text: string, key: string): ConfigEdit[] {
+  return modify(text, ['projects', key], undefined, {}).map((edit) => ({
+    offset: edit.offset,
+    length: edit.length,
+    replacement: edit.content,
+  }));
 }

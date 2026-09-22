@@ -249,16 +249,14 @@ function locateInConfig(
   };
 }
 
-/**
- * 서술 필드에 남을 경로 수를 어림잡는다. census 는 구조 필드만 세므로 여기서는
- * 트랜스크립트를 다시 훑지 않고, 계획 화면에 "이만큼은 그대로 둡니다" 를 보여주기 위한
- * 값만 만든다. 정확한 수는 --rewrite-prose 로 다시 계획하면 나온다.
- */
+/** 서술 필드에 그대로 남을 줄 수. 계획 화면에서 "이만큼은 두고 갑니다" 로 보여준다. */
 function countProse(index: ClaudeIndex, req: MoveRequest): number {
   let n = 0;
   for (const project of index.projects) {
     for (const t of project.transcripts) {
-      if (affectedCount(t, req) > 0) n += t.pathless;
+      for (const [path, lines] of t.prose) {
+        if (reparent(path, req.src, req.dst, req.policy, req.platform) !== undefined) n += lines;
+      }
     }
   }
   return n;
