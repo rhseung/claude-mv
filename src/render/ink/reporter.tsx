@@ -1,6 +1,6 @@
 import { render } from 'ink';
 
-import { App } from './App.js';
+import { App } from './app.js';
 import { createStore } from './store.js';
 import { PlainReporter } from '../plain/reporter.js';
 

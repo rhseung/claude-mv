@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
+import checkFile from 'eslint-plugin-check-file';
 import importPlugin from 'eslint-plugin-import-x';
 import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
@@ -30,8 +31,17 @@ export default [
       globals: globals.node,
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
-    plugins: { 'import-x': importPlugin, 'unused-imports': unusedImports },
+    plugins: {
+      'import-x': importPlugin,
+      'unused-imports': unusedImports,
+      'check-file': checkFile,
+    },
     rules: {
+      'check-file/filename-naming-convention': [
+        'error',
+        { 'src/**/*.{ts,tsx}': 'KEBAB_CASE', 'test/**/*.ts': 'KEBAB_CASE' },
+        { ignoreMiddleExtensions: true },
+      ],
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
