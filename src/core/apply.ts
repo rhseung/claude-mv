@@ -109,10 +109,13 @@ export async function apply(opts: ApplyOptions): Promise<ApplyResult> {
   // --- PHASE 3: 커밋 ---
   emit({ kind: 'phase', phase: 'commit' });
   for (const step of ordered) {
-    emit({ kind: 'step-start', step });
     journal.append({ kind: 'step-begin', stepId: step.id, step });
 
     try {
+      // 진행 보고는 try 안에서 한다. 렌더러가 터졌다고 이관이 통제 없이 죽으면
+      // 저널만 남고 되돌리기가 실행되지 않는다.
+      emit({ kind: 'step-start', step });
+
       const entry = staged.find((s) => s.step.id === step.id);
       if (entry) {
         await commitStaged(entry.staged, entry.target);
