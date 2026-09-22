@@ -40,6 +40,7 @@ async function plan(
     srcExists: true,
     dstExists: false,
     liveSessions: [],
+    blockingSessions: [],
     ...ctx,
   });
 }
@@ -180,7 +181,7 @@ describe('차단', () => {
       { projects: [{ path: SRC, sessions: { s1: [records.user(SRC)] } }] },
       {},
       {
-        liveSessions: [{ pid: 1, cwd: SRC, sessionId: 's' }],
+        blockingSessions: [{ pid: 1, cwd: SRC, sessionId: 's' }],
       },
     );
     expect(p.blockers.map((b) => b.kind)).toContain('locked');

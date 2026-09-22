@@ -75,6 +75,7 @@ async function setup() {
     srcExists: true,
     dstExists: false,
     liveSessions: [],
+    blockingSessions: [],
   });
 
   return { home: target, work, src, dst, plan, planFile, plansDir };

@@ -100,10 +100,14 @@ export type PlanContext = {
   srcExists: boolean;
   /** dst 디렉터리가 이미 있는지. */
   dstExists: boolean;
-  /** 살아 있는 것으로 판정된 세션. lock 검사 결과를 주입받는다. */
+  /**
+   * 살아 있다고 판정된 세션 전부. 어떤 트랜스크립트를 건드리면 안 되는지 고르는 데 쓴다.
+   * "막아야 하는가" 와는 다른 질문이라 아래 blockingSessions 와 따로 둔다 - 겸하게 하면
+   * --allow-ancestors 로 통과시킨 세션까지 차단 사유가 되어버린다.
+   */
   liveSessions: SessionRecord[];
-  /** lock 을 차단 사유로 올릴지. --force 면 false. */
-  blockOnLocks?: boolean;
+  /** 진행을 막아야 하는 세션. lock 검사가 정책까지 적용해서 준다. */
+  blockingSessions: SessionRecord[];
   /**
    * 살아 있는 세션의 트랜스크립트를 재작성 대상에서 뺀다.
    *
@@ -132,8 +136,8 @@ export function buildPlan(req: MoveRequest, ctx: PlanContext): MigrationPlan {
 
   if (!req.stateOnly && !ctx.srcExists) blockers.push({ kind: 'src-missing' });
 
-  if (ctx.blockOnLocks !== false && ctx.liveSessions.length > 0) {
-    blockers.push({ kind: 'locked', sessions: ctx.liveSessions });
+  if (ctx.blockingSessions.length > 0) {
+    blockers.push({ kind: 'locked', sessions: ctx.blockingSessions });
   }
 
   // --- 트랜스크립트와 project 디렉터리 ---
