@@ -43,6 +43,7 @@ jobs:
       - name: zsh completion 문법 검사
         if: matrix.os == 'ubuntu-latest'
         run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq zsh
           bun run build
           node dist/index.js completion zsh > /tmp/_claude-mv
           zsh -n /tmp/_claude-mv

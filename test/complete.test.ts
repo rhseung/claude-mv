@@ -63,12 +63,21 @@ describe('complete', () => {
   });
 });
 
+const hasZsh = (() => {
+  try {
+    execFileSync('zsh', ['--version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
 describe('completion 스크립트', () => {
   it.each(['zsh', 'bash', 'fish'] as const)('%s 가 생성된다', (shell) => {
     expect(completionScript(shell)).toContain('claude-mv');
   });
 
-  it('zsh 스크립트가 문법에 맞는다', () => {
+  it.skipIf(!hasZsh)('zsh 스크립트가 문법에 맞는다', () => {
     const file = join(temporaryDirectory(), '_claude-mv');
     writeFileSync(file, completionScript('zsh'));
     expect(() => execFileSync('zsh', ['-n', file])).not.toThrow();
