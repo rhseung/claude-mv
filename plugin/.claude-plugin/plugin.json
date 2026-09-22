@@ -1,0 +1,5 @@
+{
+  "name": "claude-mv",
+  "version": "0.1.0",
+  "description": "프로젝트 디렉터리를 옮긴 뒤 Claude 상태가 고아가 되면 알려줍니다"
+}
