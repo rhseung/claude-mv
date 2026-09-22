@@ -73,7 +73,10 @@ export async function runMove(
     liveSessions: opts.force ? [] : locks.blocking.map((f) => f.session),
   });
 
-  if (locks.findings.length > 0) reporter.locks(locks);
+  // 막는 lock 은 blocker 로 다시 나온다. 여기서는 막지 않는 것만 알려준다
+  // (죽은 세션, --allow-ancestors 로 통과시킨 상위 세션).
+  const informational = locks.findings.filter((f) => !locks.blocking.includes(f));
+  if (informational.length > 0) reporter.locks({ findings: informational, blocking: [] });
 
   if (plan.warnings.some((w) => w.kind === 'nothing-to-do')) {
     reporter.plan(plan, { backupId: null, dryRun: true });
@@ -81,15 +84,13 @@ export async function runMove(
     return 'nothingToDo';
   }
 
-  if (opts.dryRun) {
+  if (opts.dryRun || plan.blockers.length > 0) {
     reporter.plan(plan, { backupId: null, dryRun: true });
-    return plan.blockers.length > 0 ? blockerExit(plan) : 'planned';
-  }
-
-  if (plan.blockers.length > 0) {
-    reporter.plan(plan, { backupId: null, dryRun: true });
+    // 막히는 이유는 dry-run 에서도 보여야 한다. 계획만 보고 실행했다가 거부당하면
+    // 왜 막혔는지 두 번 찾아봐야 한다.
     for (const blocker of plan.blockers) reporter.warn(describeBlocker(blocker));
-    return blockerExit(plan);
+    if (plan.blockers.length > 0) return blockerExit(plan);
+    return 'planned';
   }
 
   const backupId = `${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}-${ulid().slice(-6)}`;

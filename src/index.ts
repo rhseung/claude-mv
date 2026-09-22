@@ -71,10 +71,14 @@ async function main(argv: string[]): Promise<number> {
     throw new CliError('--json 으로 실행할 때는 --yes 가 필요합니다. 물어볼 수 없습니다.', 'usage');
   }
 
+  // ink 는 여기서만, 그것도 동적으로 불러온다. --json 과 비TTY 경로가 React 와
+  // 터미널 드라이버를 끌어오면 파이프 출력이 더러워지고 시작이 그만큼 느려진다.
   const reporter: Reporter =
     mode === 'json'
       ? new JsonReporter(process.stdout, process.stderr, VERSION)
-      : new PlainReporter();
+      : mode === 'ink'
+        ? (await import('./render/ink/reporter.js')).createInkReporter()
+        : new PlainReporter();
 
   try {
     return ExitCode[await run(command, ctx, reporter, parsed, mode, cliEnv)];
