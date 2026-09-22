@@ -96,7 +96,10 @@ export default [
       'no-restricted-syntax': [
         'error',
         {
-          selector: 'MemberExpression[object.name="process"][property.name="env"]',
+          // TZ 는 뺀다. 이 규칙은 경로 해석이 진짜 홈으로 새는 걸 막으려는 것이고,
+          // 타임존은 procStart 를 UTC 로 읽는지 확인하는 테스트에 필요하다.
+          selector:
+            'MemberExpression[object.object.name="process"][object.property.name="env"][property.name!="TZ"]',
           message: 'process.env 는 src/shared/env.ts 에서만 읽습니다. 값은 인자로 받으세요.',
         },
         {

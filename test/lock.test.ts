@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
 import { checkLocks, parseProcStart, type ProcessProbe } from '../src/core/lock.js';
 
@@ -102,4 +102,30 @@ describe('checkLocks', () => {
     });
     expect(report.findings[0]!.verdict).toBe('unknown');
   });
+});
+
+describe('타임존', () => {
+  // procStart 는 UTC 로 기록되는데 ps 는 로컬 시각을 출력한다. 이 구분이 무너지면
+  // 살아 있는 세션을 전부 죽은 것으로 판정하고 그대로 덮어쓴다.
+  const original = process.env.TZ;
+  afterAll(() => {
+    process.env.TZ = original;
+  });
+
+  it.each(['UTC', 'Asia/Seoul', 'America/Los_Angeles'])(
+    'TZ=%s 에서도 같은 순간으로 읽는다',
+    (tz) => {
+      process.env.TZ = tz;
+      expect(parseProcStart('Tue Sep 22 12:42:11 2026')).toBe(Date.parse('2026-09-22T12:42:11Z'));
+    },
+  );
+
+  it.each(['UTC', 'Asia/Seoul', 'America/Los_Angeles'])(
+    'TZ=%s 에서 살아 있는 세션을 살아 있다고 본다',
+    async (tz) => {
+      process.env.TZ = tz;
+      const report = await checkLocks([session()], { ...opts, probe: probe() });
+      expect(report.findings[0]!.verdict).toBe('live');
+    },
+  );
 });
