@@ -24,8 +24,10 @@ export type ProjectHealth =
 export type ProjectDirInfo = {
   dirName: string;
   dirPath: string;
-  /** 구조 필드에서 모은 경로별 등장 횟수. 비어 있을 수 있다. */
+  /** 구조 필드에서 모은 경로별 줄 수. 플랜 경로 등이 섞여 있다. */
   census: Map<string, number>;
+  /** 작업 디렉터리 필드에만 나온 경로별 줄 수. 소유권 판정은 이걸로만 한다. */
+  cwdCensus: Map<string, number>;
   /** 이 디렉터리가 키로 삼고 있는 경로. 판정 불가면 null. */
   primaryCwd: string | null;
   health: ProjectHealth;
@@ -129,17 +131,22 @@ export async function scanProjectDir(
   const { transcripts, otherFiles } = await collectTranscripts(dirPath);
 
   const census = new Map<string, number>();
+  const cwdCensus = new Map<string, number>();
   for (const t of transcripts) {
     for (const [path, count] of t.paths) census.set(path, (census.get(path) ?? 0) + count);
+    for (const [path, count] of t.cwds) cwdCensus.set(path, (cwdCensus.get(path) ?? 0) + count);
   }
 
-  const { cwd, matchedKey } = pickPrimaryCwd(dirName, census);
+  // 소유권은 작업 디렉터리 필드로만 따진다. census 에는 플랜 경로가 섞여 있어서
+  // 그걸로 고르면 엉뚱한 값이 대표 경로가 될 수 있다.
+  const { cwd, matchedKey } = pickPrimaryCwd(dirName, cwdCensus);
   const health = classify(cwd, matchedKey, transcripts.length > 0, cwd ? await exists(cwd) : false);
 
   return {
     dirName,
     dirPath,
     census,
+    cwdCensus,
     primaryCwd: cwd,
     health,
     transcripts,
