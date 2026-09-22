@@ -110,3 +110,22 @@ export function resolveClaudeEnv(overrides?: { claudeHome?: string }): ClaudeEnv
     platform: raw.platform,
   };
 }
+
+/** CLI 가 보는 환경 값. 이것도 여기서만 읽는다. */
+export type CliEnv = {
+  ci: boolean;
+  term: string | undefined;
+  picker: string | undefined;
+  isStdoutTTY: boolean;
+  isStdinTTY: boolean;
+};
+
+export function readCliEnv(): CliEnv {
+  return {
+    ci: Boolean(process.env.CI),
+    term: process.env.TERM,
+    picker: process.env.CLAUDE_MV_PICKER,
+    isStdoutTTY: Boolean(process.stdout.isTTY),
+    isStdinTTY: Boolean(process.stdin.isTTY),
+  };
+}
