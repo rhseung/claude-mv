@@ -48,7 +48,6 @@
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
-    "citty": "^0.2.2",
     "env-paths": "^3.0.0",
     "execa": "^9.6.0",
     "fastest-levenshtein": "^1.0.16",

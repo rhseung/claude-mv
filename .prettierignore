@@ -1,0 +1,7 @@
+dist
+coverage
+node_modules
+bun.lock
+
+# 빌드 산출물이다. 커밋은 하지만(플러그인 설치에 빌드 단계가 없다) 포맷 검사 대상은 아니다.
+plugin/hooks/*.mjs

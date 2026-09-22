@@ -89,7 +89,9 @@ export default [
     // 경로 해석이 테스트에서 진짜 홈 디렉터리로 새는 걸 막는다. 실수 하나가 사용자의
     // ~/.claude 를 건드리는 도구라 컨벤션으로 두지 않는다.
     files: ['src/**/*.ts', 'test/**/*.ts'],
-    ignores: ['src/shared/env.ts'],
+    // src/hook 은 의존성 0 으로 단독 .mjs 번들이 되어야 해서 shared/env.ts 를
+    // import 할 수 없다 (그쪽은 env-paths 를 끌어온다). 그래서 환경을 직접 읽는다.
+    ignores: ['src/shared/env.ts', 'src/hook/**/*.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
