@@ -21,8 +21,6 @@ describe('planConfigEdits', () => {
   });
 
   it('다른 키와 값과 포맷을 전부 보존한다', () => {
-    // 이 파일에는 OAuth 자격증명과 우리가 모르는 키가 들어 있다. parse -> stringify 로
-    // 왕복시키면 그 전부를 우리 포맷으로 다시 쓰게 되고, 실수 하나가 재로그인을 부른다.
     const text = [
       '{',
       '  "oauthAccount": { "token": "secret-value" },',
@@ -37,8 +35,8 @@ describe('planConfigEdits', () => {
     const out = applyEdits(text, planConfigEdits(text, opts));
 
     expect(out).toContain('"token": "secret-value"');
-    expect(out).toContain('[1.0, 1e3, "caf\\u00e9"]'); // 숫자와 유니코드 표현 그대로
-    expect(out).toContain('"lastCost": 1.50'); // 값도 재직렬화되지 않는다
+    expect(out).toContain('[1.0, 1e3, "caf\\u00e9"]');
+    expect(out).toContain('"lastCost": 1.50');
     expect(out).toContain('"/Users/me/other"');
     expect(out).toContain('"/Users/me/new"');
     expect(out).not.toContain('"/Users/me/old"');

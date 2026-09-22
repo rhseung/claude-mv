@@ -9,10 +9,6 @@ import { records } from './fixtures/transcript.js';
 import { doctor } from '../src/core/doctor.js';
 import { scan } from '../src/core/scan.js';
 
-/**
- * 건강 판정은 scan 이 실제 파일시스템으로 한다. 그래서 가짜 세계를 주입하는 대신
- * 진짜 임시 디렉터리를 만든다 - 실제로 타는 코드 경로를 그대로 시험한다.
- */
 async function report(build: (world: string) => HomeSpec, live: string[] = []) {
   const world = temporaryDirectory();
   for (const path of live) mkdirSync(join(world, path), { recursive: true });
@@ -93,7 +89,6 @@ describe('doctor', () => {
   });
 
   it('확신이 없으면 아무 제안도 하지 않는다', async () => {
-    // 틀린 추측을 따라가면 멀쩡한 다른 프로젝트의 상태를 덮어쓰게 된다.
     const result = await report(
       (w) => {
         const gone = join(w, 'nested', 'proj');

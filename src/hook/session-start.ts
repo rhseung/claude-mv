@@ -4,14 +4,6 @@ import { join } from 'node:path';
 
 import { mangle } from '../core/mangle.js';
 
-/**
- * SessionStart 훅.
- *
- * 하는 일은 경고 하나뿐이다. 절대 스스로 옮기지 않는다 - 잘못 짚었을 때 사용자가
- * 멀쩡한 다른 프로젝트의 기록을 잃게 되고, 그건 훅이 감당할 수 있는 위험이 아니다.
- *
- * 세션이 열릴 때마다 도는 자리라 빨라야 한다. 정상 경로는 existsSync 한 번으로 끝난다.
- */
 const BUDGET_MS = 60;
 const THROTTLE_MS = 12 * 60 * 60 * 1000;
 
@@ -33,7 +25,6 @@ function configPath(home: string): string {
   return join(process.env.CLAUDE_CONFIG_DIR ?? homedir(), '.claude.json');
 }
 
-/** ~/.claude.json 의 projects 키는 진짜 절대 경로다. mangled 이름은 되돌릴 수 없다. */
 function knownProjects(path: string): string[] {
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf8')) as { projects?: Record<string, unknown> };
@@ -53,12 +44,6 @@ function dirname(path: string): string {
   return parts.join('/') || '/';
 }
 
-/**
- * 어느 경로에서 옮겨왔는지 짐작한다.
- *
- * 동점이면 아무 말도 하지 않는다. 틀린 추측을 따라가면 사용자가 멀쩡한 다른
- * 프로젝트의 상태를 덮어쓰게 되므로, 경고를 못 하는 쪽이 낫다.
- */
 function pickCandidate(known: string[], cwd: string): string | null {
   const scored = known
     .map((path) => {
@@ -86,9 +71,7 @@ function warnedRecently(cwd: string): boolean {
     try {
       mkdirSync(tmpdir(), { recursive: true });
       writeFileSync(stamp, '');
-    } catch {
-      // 스탬프를 못 써도 경고 자체는 해야 한다.
-    }
+    } catch {}
     return false;
   }
 }
@@ -102,13 +85,11 @@ async function main(): Promise<void> {
   const home = claudeHome();
   const projectsDir = join(home, 'projects');
 
-  // 정상 경로는 여기서 끝난다. 옮기지 않은 프로젝트는 syscall 한 번만 낸다.
   if (existsSync(join(projectsDir, mangle(cwd)))) return;
   if (warnedRecently(cwd)) return;
 
   const candidate = pickCandidate(knownProjects(configPath(home)), cwd);
   if (!candidate) return;
-  // 원본이 아직 살아 있으면 이름만 닮은 남의 프로젝트다.
   if (existsSync(candidate)) return;
   if (!existsSync(join(projectsDir, mangle(candidate)))) return;
   if (Date.now() - startedAt > BUDGET_MS) return;
@@ -125,6 +106,4 @@ async function main(): Promise<void> {
   );
 }
 
-// 훅이 실패해도 세션은 떠야 한다. 여기서 던지면 Claude Code 가 세션 시작에 오류를
-// 띄우는데, 그건 경고를 못 하는 것보다 훨씬 나쁘다.
 main().catch(() => {});

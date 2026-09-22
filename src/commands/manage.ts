@@ -52,7 +52,6 @@ export function runBackups(ctx: AppContext, reporter: Reporter): ExitCodeName {
     src: manifest.src,
     dst: manifest.dst,
     bytes: dirBytes(join(root, manifest.backupId)),
-    // 되돌릴 자리가 이미 다른 것으로 차 있으면 복구가 반쪽이 된다.
     restorable: manifest.sealed && !existsSync(manifest.src),
   }));
 
@@ -78,10 +77,6 @@ export function runRollback(
   return result.ok ? 'ok' : 'failedDirty';
 }
 
-/**
- * 이동 없이 스냅샷만 뜬다. 손으로 ~/.claude 를 건드리기 전 안전망.
- * 계획을 만들지 않으므로, 백업 대상은 그 프로젝트가 차지한 파일 전부다.
- */
 export function runBackupOnly(
   ctx: AppContext,
   reporter: Reporter,
@@ -152,7 +147,6 @@ export async function runRemove(
   if (!project) throw new CliError(`아는 프로젝트가 아닙니다: ${opts.target}`, 'usage');
 
   const path = project.primaryCwd;
-  // 디렉터리가 아직 살아 있는데 상태를 지우는 건 보통 실수다.
   if (path && ctx.exists(path) && !opts.force) {
     throw new CliError(
       `${path} 는 아직 있습니다. 정말 상태만 지우려면 --force 를 쓰세요.`,
@@ -184,7 +178,6 @@ export async function runRemove(
     const text = readFileSync(ctx.env.configPath, 'utf8');
     const edits = planConfigRemoval(text, path);
     if (edits.length > 0) {
-      // 통째로 재직렬화하지 않는다. 이 파일에는 OAuth 자격증명이 들어 있다.
       await writeFileAtomic(ctx.env.configPath, applyEdits(text, edits));
       journal.append({
         kind: 'committed',
@@ -218,7 +211,6 @@ export function runMerge(
     const source = join(from.dirPath, entry.name);
     const target = join(to.dirPath, entry.name);
 
-    // 파일 이름이 세션 UUID 라 실질적인 충돌은 거의 없다. 그래도 겹치면 덮지 않는다.
     if (existsSync(target)) {
       reporter.warn(`이미 있습니다, 건너뜁니다: ${entry.name}`);
       continue;

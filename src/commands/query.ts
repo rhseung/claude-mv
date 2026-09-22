@@ -26,10 +26,6 @@ export function runList(ctx: AppContext, reporter: Reporter, opts: ListOptions):
   return sorted.some((p) => p.health === 'orphaned') ? 'orphans' : 'ok';
 }
 
-/**
- * 경로로도 mangled 디렉터리 이름으로도 찾을 수 있게 한다.
- * 손실 인코딩이라 디렉터리 이름을 경로로 되돌릴 수는 없지만, 반대 방향은 된다.
- */
 export function findProject(
   ctx: AppContext,
   needle: string,

@@ -9,16 +9,9 @@ export type CompleteSources = {
   bundles: (prefix: string) => Candidate[];
 };
 
-/**
- * 셸이 되물어서 후보를 받아 가는 자리.
- *
- * 인자가 경로라서 일반 파일 완성은 거의 쓸모가 없다. 정작 필요한 건
- * "Claude 가 아는 프로젝트" 라서, 그건 이 프로세스만 안다.
- */
 export function complete(argv: string[], sources: CompleteSources): Candidate[] {
   const [commandName, ...rest] = argv;
 
-  // 첫 낱말 자리면 명령 이름을 준다.
   if (rest.length === 0 && !COMMANDS.some((c) => c.name === commandName)) {
     return COMMANDS.filter((c) => c.name.startsWith(commandName ?? '')).map((c) => ({
       value: c.name,
@@ -33,7 +26,6 @@ export function complete(argv: string[], sources: CompleteSources): Candidate[] 
     const [flagName, inlineValue] = current.split('=');
     const arg = spec.args[flagName?.replace(/^--?/, '') ?? ''];
 
-    // --sort= 처럼 닫힌 값 집합이면 그 값들을 준다.
     if (arg?.values && inlineValue !== undefined) {
       return arg.values
         .filter((v) => v.startsWith(inlineValue))
@@ -77,7 +69,6 @@ function filterByPrefix(candidates: Candidate[], prefix: string): Candidate[] {
   return prefix ? candidates.filter((c) => c.value.startsWith(prefix)) : candidates;
 }
 
-/** 셸이 읽는 형식: 한 줄에 "값<TAB>설명". */
 export function formatCandidates(candidates: Candidate[]): string {
   return candidates
     .map((c) => (c.description ? `${c.value}\t${c.description}` : c.value))

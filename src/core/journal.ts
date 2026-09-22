@@ -11,9 +11,7 @@ export type JournalPayload =
       kind: 'committed';
       stepId: string;
       target: string;
-      /** 되돌릴 때 복원할지 지워야 할지를 가른다. */
       previousState: 'existed' | 'absent';
-      /** 디렉터리 이동이면 역방향 rename 으로 되돌린다. */
       movedFrom?: string;
     }
   | { kind: 'step-failed'; stepId: string; error: string }
@@ -22,15 +20,8 @@ export type JournalPayload =
   | { kind: 'rollback-begin' }
   | { kind: 'rollback-end'; ok: boolean; residue: string[] };
 
-/** 저장될 때 seq 와 시각이 붙는다. */
 export type JournalEntry = JournalPayload & { seq: number; t: number };
 
-/**
- * 선행 기록 로그.
- *
- * 규율이 하나 있다: **한 줄을 쓰고 fsync 한 다음에야 그 효과를 실행한다.** 순서가 뒤집히면
- * 크래시했을 때 "일어났는데 기록에 없는" 변경이 생기고, 그건 되돌릴 수 없다.
- */
 export class Journal {
   private seq = 0;
 
@@ -61,14 +52,12 @@ export class Journal {
       try {
         entries.push(JSON.parse(line) as JournalEntry);
       } catch {
-        // 크래시로 마지막 줄이 잘렸을 수 있다. 거기까지만 신뢰한다.
         break;
       }
     }
     return entries;
   }
 
-  /** 이어 쓰기 위해 기존 저널의 다음 seq 로 맞춘다. */
   static resume(path: string): Journal {
     const journal = new Journal(path);
     const entries = Journal.read(path);

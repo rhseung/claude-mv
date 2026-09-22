@@ -4,7 +4,6 @@ import stringWidth from 'string-width';
 
 import type { PlanStep } from '../core/plan.js';
 
-/** 단계마다 다른 단위를 억지로 통일하지 않는다. 솔직한 단위가 더 읽기 쉽다. */
 export function describeStep(step: PlanStep): { label: string; action: string; detail: string } {
   switch (step.kind) {
     case 'move-project-dir':
@@ -52,7 +51,6 @@ export function ago(ms: number): string {
   return `${prettyMs(delta, { compact: true })} 전`;
 }
 
-/** 한글은 터미널에서 두 칸을 먹는다. 문자 수로 패딩하면 표가 어긋난다. */
 export function pad(text: string, width: number): string {
   return text + ' '.repeat(Math.max(0, width - stringWidth(text)));
 }

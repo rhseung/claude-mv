@@ -13,12 +13,6 @@ export type BackupSummary = {
   restorable: boolean;
 };
 
-/**
- * 출력 방식 세 가지(ink / plain / json)가 공유하는 계약.
- *
- * commands/ 는 이 인터페이스만 알고 React 를 모른다. 그래야 SessionStart 훅과
- * --json 경로가 ink 를 끌어오지 않는다. eslint 규칙이 이 경계를 강제한다.
- */
 export type Reporter = {
   plan(plan: MigrationPlan, opts: { backupId: string | null; dryRun: boolean }): void;
   confirm(question: string): Promise<boolean>;
@@ -35,7 +29,6 @@ export type Reporter = {
   backups(items: BackupSummary[]): void;
   note(message: string): void;
   warn(message: string): void;
-  /** ink 를 쓴 경우 렌더러를 정리한다. */
   close(): Promise<void>;
 };
 
@@ -53,6 +46,5 @@ export function resolveRenderMode(opts: {
   if (opts.ci) return 'plain';
   if (opts.term === 'dumb') return 'plain';
   if (opts.quiet) return 'plain';
-  // NO_COLOR 는 여기서 보지 않는다. 색을 끄고 싶은 것이지 진행 표시를 끄려는 게 아니다.
   return 'ink';
 }

@@ -3,25 +3,17 @@ import { describe, expect, it } from 'vitest';
 import { collides, mangle, mangleHash } from '../src/core/mangle.js';
 
 describe('mangle', () => {
-  // 실제 ~/.claude/projects 에 있던 디렉터리 이름들이다. 구현이 Claude Code 와
-  // 한 글자라도 어긋나면 이관 결과가 Claude 에게 보이지 않으므로 골든으로 박아 둔다.
   it.each([
-    ['/Users/rhseung', '-Users-rhseung'],
-    ['/Users/rhseung/.local/share/chezmoi', '-Users-rhseung--local-share-chezmoi'],
-    ['/Users/rhseung/Developer/aunionai', '-Users-rhseung-Developer-aunionai'],
+    ['평범한 경로', '/Users/me', '-Users-me'],
+    ['숨김 디렉터리', '/Users/me/.local/share/chezmoi', '-Users-me--local-share-chezmoi'],
+    ['이름 안의 하이픈', '/Users/me/dev/web-app', '-Users-me-dev-web-app'],
+    ['대문자', '/Users/me/dev/API-V2', '-Users-me-dev-API-V2'],
     [
-      '/Users/rhseung/Developer/aunionai/aunionai-dub-fe',
-      '-Users-rhseung-Developer-aunionai-aunionai-dub-fe',
+      '공백',
+      '/Users/me/Library/Application Support/Tool/scratch',
+      '-Users-me-Library-Application-Support-Tool-scratch',
     ],
-    [
-      '/Users/rhseung/Developer/aunionai/RST-FE-refac',
-      '-Users-rhseung-Developer-aunionai-RST-FE-refac',
-    ],
-    [
-      '/Users/rhseung/Library/Application Support/Codenotch/usage-scratch',
-      '-Users-rhseung-Library-Application-Support-Codenotch-usage-scratch',
-    ],
-  ])('%s -> %s', (input, expected) => {
+  ])('%s: %s -> %s', (_label, input, expected) => {
     expect(mangle(input)).toBe(expected);
   });
 
@@ -35,13 +27,13 @@ describe('mangle', () => {
   });
 
   it('NFC 와 NFD 는 서로 다른 이름이 된다', () => {
-    const nfc = '/a/\uD55C'; // 한
-    const nfd = '/a/\u1112\u1161\u11AB'; // ᄒ + ᅡ + ᆫ
+    const nfc = '/a/\uD55C';
+    const nfd = '/a/\u1112\u1161\u11AB';
     expect(mangle(nfc)).not.toBe(mangle(nfd));
   });
 
   describe('200 자 초과', () => {
-    const long = `/Users/rhseung/${'a'.repeat(250)}`;
+    const long = `/Users/me/${'a'.repeat(250)}`;
 
     it('200 자로 자르고 base36 해시를 붙인다', () => {
       const got = mangle(long);

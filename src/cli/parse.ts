@@ -7,10 +7,6 @@ export type ParsedArgs = {
   flags: Record<string, string | boolean>;
 };
 
-/**
- * 명령 트리에서 바로 파싱한다. 별도 파서에 트리를 한 번 더 기술하면 두 벌이 되고,
- * 그러면 자동완성이 실제 동작과 어긋나기 시작한다.
- */
 export function parseArgs(spec: CommandSpec, argv: string[]): ParsedArgs {
   const positionals: string[] = [];
   const flags: Record<string, string | boolean> = {};
@@ -39,8 +35,6 @@ export function parseArgs(spec: CommandSpec, argv: string[]): ParsedArgs {
 
     const name = isLong ? rawName : (byAlias.get(rawName) ?? rawName);
 
-    // --no-foo 는 boolean 플래그를 끄는 형태로도 쓰이지만, 우리 트리에는
-    // no-backup 처럼 이름 자체가 no- 로 시작하는 것도 있어서 먼저 그대로 찾아본다.
     const arg = spec.args[name];
     if (!arg && isLong && name.startsWith('no-')) {
       const positive = name.slice(3);

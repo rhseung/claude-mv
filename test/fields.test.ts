@@ -4,7 +4,6 @@ import { extractPaths, replacePathIn } from '../src/core/fields.js';
 
 describe('extractPaths', () => {
   it('문장 가운데 박힌 경로를 뽑는다', () => {
-    // 서술 필드는 값 전체가 경로가 아니다. 그래서 구조 필드와 같은 방식으로는 못 잡는다.
     expect(extractPaths('cd /Users/me/proj 했습니다')).toEqual(['/Users/me/proj']);
   });
 
@@ -36,7 +35,6 @@ describe('replacePathIn', () => {
   });
 
   it('접두사만 같은 경로는 건드리지 않는다', () => {
-    // 경계를 안 보면 /a/old-backup 의 앞부분까지 바뀐다.
     expect(replacePathIn('/a/old-backup/x', '/a/old', '/a/new')).toBe('/a/old-backup/x');
   });
 

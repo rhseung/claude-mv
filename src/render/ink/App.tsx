@@ -25,7 +25,6 @@ export function App({ store }: { store: Store }) {
     return { ...entry, described };
   });
 
-  // 한글 라벨은 터미널에서 두 칸이라 문자 수로 재면 열이 어긋난다.
   const labelWidth = Math.max(...rows.map((r) => stringWidth(r.described.label)), 12);
   const actionWidth = Math.max(...rows.map((r) => stringWidth(r.described.action)), 6);
 

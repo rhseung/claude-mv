@@ -32,7 +32,6 @@ const plan = {
 
 describe('JSON 출력', () => {
   it('진행은 stderr, 결과 객체 하나는 stdout', async () => {
-    // 그래야 `claude-mv ... --json | jq` 가 바로 되고 2>/dev/null 이 깨끗한 객체를 준다.
     const out = new Sink();
     const err = new Sink();
     const reporter = new JsonReporter(out as never, err as never, '1.2.3');

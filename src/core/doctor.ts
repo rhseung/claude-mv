@@ -13,7 +13,6 @@ export type Suggestion = {
 
 export type DoctorEntry = {
   project: ProjectDirInfo;
-  /** 이 경로의 상태가 다른 어느 위치에도 남아 있는지. */
   alsoIn: ('config' | 'history' | 'cache')[];
   suggestions: Suggestion[];
 };
@@ -22,14 +21,12 @@ export type DoctorReport = {
   orphans: DoctorEntry[];
   healthy: ProjectDirInfo[];
   other: DoctorEntry[];
-  /** mangled 이름이 같아지는 서로 다른 경로들. 손실 인코딩이라 실제로 생길 수 있다. */
   collisions: { dirName: string; paths: string[] }[];
 };
 
 export type DoctorOptions = {
   index: ClaudeIndex;
   policy: CasePolicy;
-  /** 이동 후보를 찾을 디렉터리들. 보통 살아 있는 프로젝트들의 부모. */
   searchRoots: string[];
   listDirs: (dir: string) => string[];
   basename: (path: string) => string;
@@ -85,12 +82,6 @@ function locateElsewhere(
   return out;
 }
 
-/**
- * mangled 이름이 같아지는 서로 다른 경로를 찾는다.
- *
- * `/a/b-c` 와 `/a/b/c` 가 같은 이름이 되는 손실 인코딩이라 실제로 벌어질 수 있고,
- * 그러면 두 프로젝트의 세션이 한 디렉터리에 섞인다.
- */
 function findCollisions(index: ClaudeIndex): { dirName: string; paths: string[] }[] {
   const out: { dirName: string; paths: string[] }[] = [];
   for (const project of index.projects) {
@@ -100,12 +91,6 @@ function findCollisions(index: ClaudeIndex): { dirName: string; paths: string[] 
   return out;
 }
 
-/**
- * 고아가 된 경로가 어디로 갔는지 짐작한다.
- *
- * 확신이 없으면 아무 말도 하지 않는 쪽이 낫다. 틀린 추측을 따라가면 사용자가
- * 멀쩡한 다른 프로젝트의 상태를 덮어쓰게 된다.
- */
 function suggest(missing: string, opts: DoctorOptions): Suggestion[] {
   const name = opts.basename(missing);
   const parent = opts.dirname(missing);
@@ -131,7 +116,6 @@ function suggest(missing: string, opts: DoctorOptions): Suggestion[] {
         consider(candidate, 0.2, '이름이 비슷합니다');
       }
 
-      // 부모가 그대로 살아 있으면 그 안에서 이름만 바뀌었을 가능성이 높다.
       if (root === parent && opts.exists(parent)) consider(candidate, 0.15, '같은 부모 안입니다');
     }
   }

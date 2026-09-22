@@ -11,13 +11,6 @@ import type { MigrationPlan } from '../../core/plan.js';
 import type { ProjectDirInfo } from '../../core/scan.js';
 import type { BackupSummary, Reporter } from '../reporter.js';
 
-/**
- * 사람이 보는 경로에서만 쓴다. 이 파일은 동적 import 로만 불려서, --json 과 훅은
- * React 를 끌어오지 않는다.
- *
- * 목록 계열(ls, info, doctor, rollback)은 평문 표로 충분하고 진행 상태도 없어서
- * PlainReporter 에 그대로 넘긴다. 전체 화면 TUI 로 만들지 않는 이유이기도 하다.
- */
 export function createInkReporter(): Reporter {
   const store = createStore();
   const plain = new PlainReporter();
@@ -25,7 +18,6 @@ export function createInkReporter(): Reporter {
 
   return {
     plan(plan: MigrationPlan, opts: { backupId: string | null; dryRun: boolean }) {
-      // 이 시점 이전에 lock 경고가 들어와 있을 수 있다. 덮어쓰면 그게 사라진다.
       store.set((prev) => ({
         plan,
         backupId: opts.backupId,

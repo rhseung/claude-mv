@@ -10,7 +10,6 @@ export type RollbackResult = {
   restored: string[];
   reverted: string[];
   removed: string[];
-  /** 안전하게 되돌리지 못해 사람이 봐야 하는 것들. */
   residue: { path: string; why: string }[];
   ok: boolean;
 };
@@ -19,12 +18,6 @@ export type RollbackInput = {
   backupDir: string;
 };
 
-/**
- * 저널을 역순으로 재생해서 원래대로 돌린다.
- *
- * rollback 자체도 저널에 기록되고 멱등하게 만들어져 있다. 되돌리는 도중에 죽어도
- * 다시 실행하면 이어서 끝낼 수 있어야 하기 때문이다.
- */
 export function rollback(input: RollbackInput): RollbackResult {
   const manifestPath = join(input.backupDir, 'manifest.json');
   const manifest: BackupManifest = readManifest(manifestPath);
@@ -40,8 +33,6 @@ export function rollback(input: RollbackInput): RollbackResult {
     ok: true,
   };
 
-  // 봉인되지 않은 백업은 커밋 장벽을 넘기 전에 죽었다는 뜻이다. 그러면 사용자 눈에
-  // 보이는 변경은 없고, 남은 임시 파일만 치우면 된다.
   if (!manifest.sealed) {
     cleanStaging(entries, result);
     return result;
@@ -55,7 +46,6 @@ export function rollback(input: RollbackInput): RollbackResult {
 
     try {
       if (entry.movedFrom) {
-        // 디렉터리 이동은 역방향 rename 한 번이면 끝난다.
         if (!existsSync(entry.target)) continue;
         if (existsSync(entry.movedFrom)) {
           result.residue.push({
@@ -92,8 +82,6 @@ export function rollback(input: RollbackInput): RollbackResult {
         continue;
       }
 
-      // 백업에서 바로 덮어쓰지 않고 임시 파일을 거쳐 rename 한다. 되돌리는 도중에
-      // 죽어도 대상 파일이 반쯤 쓰인 상태로 남지 않는다.
       const staging = `${entry.target}.claude-mv-restore`;
       copyFileSync(source, staging);
       renameSync(staging, entry.target);

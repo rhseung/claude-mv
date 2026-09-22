@@ -17,8 +17,6 @@ const mapper = (value: string) => reparent(value, OLD, NEW, 'sensitive', 'linux'
 const matchesNothing = () => undefined;
 
 describe('바이트 동일성', () => {
-  // 이 도구가 지키는 가장 중요한 보장이다. 손댈 이유가 없는 줄은 단 한 바이트도
-  // 달라지면 안 된다. 깨지면 diff 검토와 하드링크 백업이 동시에 무의미해진다.
   it.each([
     ['보통', {}],
     ['CRLF', { crlf: true }],
@@ -43,7 +41,6 @@ describe('바이트 동일성', () => {
   });
 
   it('숫자와 유니코드 표현이 보존된다', async () => {
-    // JSON.stringify 로 왕복시키면 1.0 -> 1, é -> é 로 바뀐다.
     const { file } = writeTranscript([]);
     const raw = '{"type":"x","n":1.0,"s":"caf\\u00e9","e":1e3}\n';
     const { writeFileSync } = await import('node:fs');
@@ -64,7 +61,6 @@ describe('rewriteTranscript', () => {
 
     const out = readFileSync(result.staged!, 'utf8').trim().split('\n');
     expect(JSON.parse(out[0]!).cwd).toBe(NEW);
-    // 서술 필드는 "그때 실제로 그 경로였다" 는 기록이라 건드리지 않는다.
     expect(out[1]).toContain(OLD);
   });
 
@@ -73,7 +69,7 @@ describe('rewriteTranscript', () => {
     const result = await rewriteTranscript(file, (v) => (v === OLD ? NEW : undefined), {
       includeProse: true,
     });
-    expect(result.linesChanged).toBe(0); // text 필드는 경로 전체가 아니라 문장 안에 있다
+    expect(result.linesChanged).toBe(0);
   });
 
   it('하위 경로를 따라 옮긴다', async () => {
@@ -84,7 +80,6 @@ describe('rewriteTranscript', () => {
     expect(out.cwd).toBe(`${NEW}/src`);
     expect(out.attachment.snapshot.workingDirectory).toBe(`${NEW}/src`);
     expect(out.attachment.snapshot.additionalWorkingDirectories).toEqual([`${NEW}/docs`]);
-    // 상대 경로는 옮길 기준점이 없다.
     expect(out.attachment.path).toBe('.zshrc');
   });
 
@@ -110,12 +105,10 @@ describe('censusTranscript', () => {
     const census = await censusTranscript(file);
     expect(census.paths.get(OLD)).toBe(2);
     expect(census.paths.get('/somewhere/else')).toBe(1);
-    // pathless 레코드와 서술 필드만 있는 레코드 둘 다 구조 경로가 없다.
     expect(census.pathless).toBe(2);
   });
 
   it('한 파일 안에 cwd 가 섞인 경우를 잡아낸다', async () => {
-    // 실제로 있었던 케이스다. 세션 도중 cd 하면 이렇게 된다.
     const { file } = writeTranscript([
       records.user('/Users/me'),
       records.user('/Users/me/.local/share/chezmoi'),
@@ -138,7 +131,6 @@ describe('동시 수정', () => {
     const { file } = writeTranscript([records.user(OLD)]);
     const { appendFileSync } = await import('node:fs');
 
-    // 라이브 세션이 덧붙이는 상황. 그대로 rename 하면 이 줄이 사라진다.
     const racing = (value: string) => {
       appendFileSync(file, `${JSON.stringify(records.user(OLD))}\n`);
       return reparent(value, OLD, NEW, 'sensitive', 'linux');

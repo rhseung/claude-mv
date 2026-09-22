@@ -7,31 +7,21 @@ import { mangle } from '../../src/core/mangle.js';
 import type { ScanTarget } from '../../src/core/scan.js';
 
 export type ProjectSpec = {
-  /** 이 디렉터리가 키로 삼는 경로. mangle 해서 디렉터리 이름을 만든다. */
   path: string;
-  /** 세션 파일별 레코드 목록. */
   sessions?: Record<string, unknown[]>;
-  /** `<sessionId>/subagents/agent-<id>.jsonl`. */
   subagents?: Record<string, Record<string, unknown[]>>;
-  /** 디렉터리 이름을 일부러 어긋나게 만든다 (key-mismatch 재현). */
   dirNameOverride?: string;
 };
 
 export type HomeSpec = {
   projects?: ProjectSpec[];
-  /** ~/.claude.json 의 projects 키로 들어갈 경로들. */
   configProjects?: string[];
   githubRepoPaths?: Record<string, string[]>;
   history?: { project: string; count: number }[];
-  /** 캐시 루트에 만들 프로젝트 경로들. */
   cacheFor?: string[];
   sessions?: { pid: number; cwd: string; sessionId?: string; procStart?: string }[];
 };
 
-/**
- * 가짜 ~/.claude 트리. 테스트가 진짜 홈을 건드리지 않게 하는 3 중 방어 중 하나다
- * (나머지 둘은 env.ts 로의 경로 해석 일원화와 test/setup.ts 의 HOME 격리).
- */
 export function createFakeClaudeHome(spec: HomeSpec = {}): ScanTarget & { home: string } {
   const home = mkdtempSync(join(tmpdir(), 'claude-mv-home-'));
   const projectsDir = join(home, 'projects');
@@ -53,7 +43,6 @@ export function createFakeClaudeHome(spec: HomeSpec = {}): ScanTarget & { home: 
       mkdirSync(agentDir, { recursive: true });
       for (const [agentId, lines] of Object.entries(agents)) {
         writeFileSync(join(agentDir, `${agentId}.jsonl`), toJsonl(lines));
-        // 실제로 딸려 있는 사이드카. JSONL 이 아니라 그대로 옮겨야 한다.
         writeFileSync(join(agentDir, `${agentId}.meta.json`), JSON.stringify({ agentType: 'x' }));
       }
     }

@@ -16,7 +16,6 @@ describe('dispatch', () => {
   });
 
   it('전역 플래그가 앞에 와도 명령을 찾는다', () => {
-    // `git --git-dir=X status` 처럼 흔한 형태다. 이게 깨지면 ls 가 mv 의 인자로 먹힌다.
     expect(dispatch(['--claude-home', '/tmp/x', 'ls'])).toEqual({
       command: 'ls',
       rest: ['--claude-home', '/tmp/x'],
@@ -33,7 +32,6 @@ describe('dispatch', () => {
   });
 
   it('-- 뒤는 전부 mv 의 인자다', () => {
-    // doctor 라는 이름의 디렉터리를 옮기는 탈출구.
     expect(dispatch(['--', 'doctor', 'new'])).toEqual({ command: 'mv', rest: ['doctor', 'new'] });
   });
 
@@ -66,7 +64,6 @@ describe('parseArgs', () => {
   });
 
   it('이름이 no- 로 시작하는 플래그를 그대로 받는다', () => {
-    // --no-backup 은 backup 을 끄는 게 아니라 그 자체가 플래그 이름이다.
     expect(bool(parseArgs(mv, ['a', 'b', '--no-backup']), 'no-backup')).toBe(true);
   });
 

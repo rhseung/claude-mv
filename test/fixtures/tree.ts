@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-/** 디렉터리 트리의 경로별 내용 해시. 되돌리기가 정말로 원상복구인지 보는 데 쓴다. */
 export function snapshot(root: string): Map<string, string> {
   const out = new Map<string, string>();
 

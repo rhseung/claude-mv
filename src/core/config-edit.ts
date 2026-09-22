@@ -9,14 +9,6 @@ function findProperty(node: Node | undefined, key: string): Node | undefined {
   return node.children?.find((child) => child.children?.[0]?.value === key);
 }
 
-/**
- * `~/.claude.json` 에서 바꿀 **바이트 구간**만 계산한다.
- *
- * 절대 parse -> 수정 -> stringify 를 하면 안 된다. 이 파일에는 OAuth 자격증명과
- * 우리가 모르는 키가 잔뜩 들어 있고, 통째로 재직렬화하면 그 전부를 우리 포맷으로
- * 다시 쓰게 된다. 실수 하나가 사용자를 재로그인시킨다.
- * 그래서 키 문자열이 놓인 자리만 정확히 찾아서 그 자리만 갈아끼운다.
- */
 export function planConfigEdits(
   text: string,
   opts: { src: string; dst: string; policy: CasePolicy; platform: NodeJS.Platform },
@@ -64,7 +56,6 @@ export function planConfigEdits(
   return edits;
 }
 
-/** 뒤에서부터 적용해야 앞쪽 offset 이 밀리지 않는다. */
 export function applyEdits(text: string, edits: ConfigEdit[]): string {
   let out = text;
   for (const edit of [...edits].sort((a, b) => b.offset - a.offset)) {
@@ -73,12 +64,6 @@ export function applyEdits(text: string, edits: ConfigEdit[]): string {
   return out;
 }
 
-/**
- * `projects` 에서 키 하나를 통째로 들어낸다.
- *
- * 키를 바꾸는 것과 달리 삭제는 쉼표와 앞뒤 공백까지 같이 정리해야 해서 직접 자르면
- * 깨진 JSON 이 나온다. jsonc-parser 의 modify 가 그 경계를 계산해 준다.
- */
 export function planConfigRemoval(text: string, key: string): ConfigEdit[] {
   return modify(text, ['projects', key], undefined, {}).map((edit) => ({
     offset: edit.offset,

@@ -28,7 +28,6 @@ describe('complete', () => {
   });
 
   it('경로 인자에는 Claude 가 아는 프로젝트를 준다', () => {
-    // 일반 파일 완성은 이 도구에서 거의 쓸모가 없다. 필요한 건 아는 프로젝트다.
     expect(values(['info', ''])).toEqual(['/w/alpha', '/w/beta']);
     expect(values(['rm', ''])).toEqual(['/w/alpha', '/w/beta']);
   });
@@ -70,15 +69,12 @@ describe('completion 스크립트', () => {
   });
 
   it('zsh 스크립트가 문법에 맞는다', () => {
-    // ps-cli 의 completion 이 깨진 채로 오래 남았던 건 이 검사가 없어서다.
     const file = join(temporaryDirectory(), '_claude-mv');
     writeFileSync(file, completionScript('zsh'));
     expect(() => execFileSync('zsh', ['-n', file])).not.toThrow();
   });
 
   it('zsh 스크립트가 compadd 를 쓴다', () => {
-    // compgen 흉내를 내거나 후보를 직접 출력하면 zsh 완성 시스템을 우회하게 되고,
-    // 그러면 fzf-tab 같은 게 전혀 걸리지 않는다.
     const script = completionScript('zsh');
     expect(script).toContain('compadd');
     expect(script).toContain('#compdef');

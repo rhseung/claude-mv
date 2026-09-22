@@ -2,12 +2,6 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/**
- * package.json 의 버전을 플러그인 매니페스트로 옮긴다.
- *
- * 한 레포에 CLI 와 플러그인이 같이 있어서 버전이 두 군데에 적힌다. 어긋나면
- * 사용자가 받은 플러그인과 CLI 가 다른 물건이 되므로 CI 가 --check 로 막는다.
- */
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const pluginManifest = join(root, 'plugin', '.claude-plugin', 'plugin.json');
 

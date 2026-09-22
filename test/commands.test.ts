@@ -13,7 +13,6 @@ import { scan } from '../src/core/scan.js';
 
 import type { AppContext } from '../src/shared/context.js';
 
-/** 상태를 바꾸는 명령들이라 리포터 출력은 버리고 결과만 본다. */
 function silentReporter() {
   const notes: string[] = [];
   const warnings: string[] = [];
@@ -139,7 +138,6 @@ describe('merge', () => {
     runMerge(ctx, reporter, { from: b, to: a, home: '/home', yes: true });
 
     expect(warnings.join()).toContain('same.jsonl');
-    // 원본이 그대로 남아 있어야 한다. 덮었으면 b 의 기록이 사라진다.
     expect(readFileSync(join(ctx.env.projectsDir, mangle(a), 'same.jsonl'), 'utf8')).toContain(a);
   });
 });
@@ -181,7 +179,6 @@ describe('export / import', () => {
       home: '/home',
     });
 
-    // 머신이 바뀌면 홈 경로도 바뀐다. 푸는 것만으로는 끝나지 않고 결국 경로 이관이다.
     expect(result.migrateFrom).toBe(path);
     expect(result.migrateTo).toBe('/elsewhere/proj');
   });
@@ -224,7 +221,6 @@ describe('backup', () => {
     runBackupOnly(ctx, reporter, { target: path, home: '/home', version: '0' });
 
     expect(notes.join()).toMatch(/백업 \d/);
-    // 원본은 그대로 있어야 한다.
     expect(existsSync(join(ctx.env.projectsDir, mangle(path), 's1.jsonl'))).toBe(true);
   });
 });

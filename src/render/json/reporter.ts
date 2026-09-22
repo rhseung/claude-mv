@@ -7,12 +7,6 @@ import type { BackupSummary, Reporter } from '../reporter.js';
 
 export const SCHEMA_VERSION = 1;
 
-/**
- * 진행 이벤트는 **stderr 에 NDJSON**, 결과 객체는 **stdout 에 하나**.
- *
- * 그래야 `claude-mv a b --json --yes | jq` 가 바로 동작하고 `2>/dev/null` 이
- * 깨끗한 객체 하나를 준다. 전부 stdout 에 섞으면 모든 소비자가 걸러내야 한다.
- */
 export class JsonReporter implements Reporter {
   private result: Record<string, unknown> | null = null;
 
@@ -47,7 +41,6 @@ export class JsonReporter implements Reporter {
   }
 
   async confirm(): Promise<boolean> {
-    // --json 에서는 물을 수 없다. options 검증이 --yes 없는 실행을 미리 막는다.
     return false;
   }
 
@@ -95,8 +88,6 @@ export class JsonReporter implements Reporter {
       orphans: report.orphans.map((entry) => ({
         encoded: entry.project.dirName,
         path: entry.project.primaryCwd,
-        // 손실 인코딩이라 디렉터리 이름만으로는 경로를 복원할 수 없다. 이 값이
-        // 어디서 왔는지 소비자가 알아야 근사치인지 판단할 수 있다.
         pathSource: entry.project.primaryCwd ? 'transcript' : 'unknown',
         health: entry.project.health,
         sizeBytes: entry.project.bytes,

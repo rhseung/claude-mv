@@ -23,8 +23,6 @@ export async function createContext(opts?: { claudeHome?: string }): Promise<App
   return {
     env,
     platform,
-    // 플랫폼 기본값에서 출발하되 실제 볼륨으로 확정한다. macOS 는 대소문자 구분
-    // 볼륨을 만들 수 있어서 플랫폼만 보고 단정할 수 없다.
     policy: probeCasePolicy(env.claudeHome, defaultCasePolicy(platform)),
     probe: createProcessProbe(platform),
     index: await scan(env),
@@ -43,7 +41,6 @@ export function listDirs(dir: string): string[] {
   }
 }
 
-/** doctor 가 이동 후보를 찾을 디렉터리들. 살아 있는 프로젝트의 부모에서 출발한다. */
 export function searchRoots(index: ClaudeIndex, home: string): string[] {
   const roots = new Set<string>([
     join(home, 'Developer'),

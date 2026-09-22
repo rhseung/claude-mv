@@ -9,12 +9,6 @@ import type { MigrationPlan } from '../../core/plan.js';
 import type { ProjectDirInfo } from '../../core/scan.js';
 import type { Reporter, BackupSummary } from '../reporter.js';
 
-/**
- * 비TTY 와 --quiet 에서 쓰는 한 줄 한 사건 출력.
- *
- * 커서 제어도 스피너 프레임도 없어서 로그로 흘려보내도 읽을 수 있다.
- * ink 를 절대 import 하지 않는다 - 그게 이 파일이 따로 있는 이유다.
- */
 export class PlainReporter implements Reporter {
   constructor(
     private readonly out: NodeJS.WritableStream = process.stdout,

@@ -1,9 +1,3 @@
-/**
- * 명령 트리를 **데이터로** 둔다.
- *
- * dispatch, help, 자동완성이 전부 여기서 나온다. 정적 completion 파일을 따로 두면
- * 명령을 추가할 때마다 손으로 고쳐야 하고, 안 고치면 조용히 어긋난다.
- */
 export type ArgKind = 'boolean' | 'string' | 'positional';
 
 export type ArgSpec = {
@@ -11,18 +5,11 @@ export type ArgSpec = {
   alias?: string;
   description: string;
   required?: boolean;
-  /** 닫힌 값 집합. 자동완성이 그대로 후보로 쓴다. */
   values?: string[];
   default?: string | boolean;
 };
 
-export type CompletionSource =
-  | 'project' // Claude 가 아는 프로젝트 경로
-  | 'directory' // 일반 디렉터리
-  | 'backup' // 백업 ID
-  | 'bundle' // .tgz 파일
-  | 'shell' // zsh | bash | fish
-  | 'none';
+export type CompletionSource = 'project' | 'directory' | 'backup' | 'bundle' | 'shell' | 'none';
 
 export type CommandSpec = {
   name: string;
@@ -147,7 +134,6 @@ export function findCommand(name: string): CommandSpec | undefined {
   return COMMANDS.find((c) => c.name === name);
 }
 
-/** 값을 하나 더 먹는 플래그들. 어느 명령인지 알기 전에도 건너뛸 수 있어야 한다. */
 const VALUE_FLAGS = new Set(
   COMMANDS.flatMap((command) =>
     Object.entries(command.args)
@@ -156,16 +142,6 @@ const VALUE_FLAGS = new Set(
   ),
 );
 
-/**
- * 어떤 명령을 실행할지 고른다.
- *
- * 명령 이름이 맨 앞에 온다고 가정하면 안 된다. `claude-mv --claude-home X ls` 처럼
- * 전역 플래그를 앞에 두는 건 흔한 형태다 (`git --git-dir=X status`).
- * 그래서 플래그를 건너뛰면서 첫 낱말을 찾는다.
- *
- * 알려진 명령이 없으면 `mv` 로 본다 - 이름이 곧 동사라 `claude-mv old new` 가
- * 자연스럽다. `doctor` 라는 이름의 디렉터리를 옮기려면 `--` 나 `./doctor` 를 쓴다.
- */
 export function dispatch(argv: string[]): { command: string; rest: string[] } {
   for (let i = 0; i < argv.length; i++) {
     const token = argv[i]!;
@@ -174,7 +150,6 @@ export function dispatch(argv: string[]): { command: string; rest: string[] } {
     if (token === '__complete') return { command: '__complete', rest: argv.slice(i + 1) };
 
     if (token.startsWith('-')) {
-      // `--flag=value` 는 한 낱말, `--flag value` 는 두 낱말이다.
       if (!token.includes('=') && VALUE_FLAGS.has(token)) i++;
       continue;
     }

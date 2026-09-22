@@ -8,7 +8,6 @@ export type InkState = {
   steps: { step: PlanStep; status: StepStatus; detail?: string }[];
   notes: string[];
   warnings: string[];
-  /** 확인 프롬프트를 띄워야 하면 질문이 들어온다. */
   question: string | null;
   outcome:
     | { kind: 'ok'; durationMs: number }

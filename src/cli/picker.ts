@@ -25,11 +25,6 @@ export async function hasFzf(): Promise<boolean> {
   }
 }
 
-/**
- * 인자를 생략했을 때 목록에서 고르게 한다.
- *
- * fzf 가 있으면 그걸 띄운다. 사용자가 이미 익숙한 조작이고, 미리보기 창까지 붙일 수 있다.
- */
 export async function pickWithFzf(
   candidates: Candidate[],
   opts: { prompt: string; preview?: string },
@@ -51,7 +46,6 @@ export async function pickWithFzf(
     const picked = stdout.trim().split('\t')[0];
     return picked || null;
   } catch {
-    // 사용자가 Esc 로 취소하면 fzf 는 130 으로 끝난다. 오류가 아니다.
     return null;
   }
 }

@@ -22,7 +22,6 @@ import type { AppContext } from '../shared/context.js';
 export type Bundle = {
   version: 1;
   tool: 'claude-mv';
-  /** 내보낼 때의 절대 경로. 들여올 때 여기서부터 이관한다. */
   originalPath: string;
   dirName: string;
   exportedAt: number;
@@ -48,8 +47,6 @@ export function runExport(
     platform: ctx.platform,
   };
 
-  // 스테이징 디렉터리를 만들어 한 번에 묶는다. tar.create 를 같은 파일에 두 번 부르면
-  // 뒤엣것이 앞엣것을 덮어서 매니페스트나 내용 중 하나가 사라진다.
   const staging = mkdtempSync(join(tmpdir(), 'claude-mv-export-'));
   writeFileSync(join(staging, MANIFEST), JSON.stringify(bundle, null, 2));
   cpSync(project.dirPath, join(staging, 'projects', project.dirName), { recursive: true });
@@ -73,12 +70,6 @@ export function readBundle(file: string): Bundle {
   return JSON.parse(readFileSync(manifestPath, 'utf8')) as Bundle;
 }
 
-/**
- * 번들을 푼다.
- *
- * 머신이 바뀌면 홈 디렉터리 경로도 바뀌므로(`/Users/x` -> `/home/x`) 단순히 푸는 걸로는
- * 끝나지 않는다. 결국 경로 이관이라, 푼 다음 mv 엔진을 그대로 태운다.
- */
 export function runImport(
   ctx: AppContext,
   reporter: Reporter,

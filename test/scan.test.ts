@@ -10,7 +10,6 @@ const CHEZMOI = '/Users/me/.local/share/chezmoi';
 
 describe('pickPrimaryCwd', () => {
   it('최빈값이 아니라 디렉터리 이름과 맞는 경로를 고른다', () => {
-    // 실제 ~/.claude 에서 나온 상황이다. 한 세션에서 cd 하면 하위 경로가 더 많이 찍힌다.
     const census = new Map([
       [CHEZMOI, 349],
       [HOME, 108],
@@ -45,7 +44,6 @@ describe('scan', () => {
     const index = await scan(target);
     const health = Object.fromEntries(index.projects.map((p) => [p.dirName, p.health]));
 
-    // HOME 은 테스트 실행 머신에 없으므로 orphaned 로 나온다. 있는 경로로 하나 더 본다.
     expect(health[mangle('/gone/for/good')]).toBe('orphaned');
     expect(health[mangle('/empty/one')]).toBe('empty');
     expect(health[mangle('/no/paths')]).toBe('undeterminable');
@@ -66,17 +64,13 @@ describe('scan', () => {
     const project = index.projects[0]!;
 
     expect(project.transcripts.map((t) => t.kind).sort()).toEqual(['session', 'subagent']);
-    // subagent 의 cwd 가 부모와 다를 수 있다. census 에는 둘 다 들어가야 한다.
     expect([...project.census.keys()].sort()).toEqual([HOME, '/other/place']);
-    // .meta.json 은 JSONL 이 아니다. 파싱하지 말고 그대로 옮겨야 한다.
     expect(project.otherFiles.some((f) => f.endsWith('.meta.json'))).toBe(true);
   });
 });
 
 describe('locate', () => {
   it('자기 디렉터리와 부모 디렉터리를 모두 찾는다', async () => {
-    // 실제로 있었던 구조다. 부모에서 시작한 세션이 자식 경로에서 작업하면
-    // 자식 경로가 부모의 project 디렉터리 census 에 들어간다.
     const PARENT = '/Users/me/dev';
     const CHILD = '/Users/me/dev/proj';
     const target = createFakeClaudeHome({
@@ -101,8 +95,6 @@ describe('locate', () => {
   });
 
   it('여섯 위치는 서로 독립이다', async () => {
-    // RST-FE-refac 는 projects 와 캐시는 있는데 .claude.json 엔트리가 없었고,
-    // gsainfoteam 은 그 반대였다. 하나로 다른 하나를 추론하면 안 된다.
     const A = '/Users/me/only-dir';
     const B = '/Users/me/only-config';
     const target = createFakeClaudeHome({
