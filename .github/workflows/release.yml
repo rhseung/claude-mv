@@ -1,0 +1,26 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm Trusted Publishing (OIDC). 토큰을 secret 에 두지 않는 이유
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@v4
+        with:
+          install_args: --locked
+      - run: bun install --frozen-lockfile
+      - run: bun run verify
+      - run: bun run build
+      - run: bun run sync:version --check
+      - run: git diff --exit-code plugin/hooks/session-start.mjs
+      # OIDC 와 provenance 는 npm CLI 기능이라 bun publish 를 쓰지 않는다. npm 11.5.1+ 필요.
+      - run: npm publish --access public --provenance
