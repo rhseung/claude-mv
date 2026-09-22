@@ -147,15 +147,43 @@ export function findCommand(name: string): CommandSpec | undefined {
   return COMMANDS.find((c) => c.name === name);
 }
 
+/** 값을 하나 더 먹는 플래그들. 어느 명령인지 알기 전에도 건너뛸 수 있어야 한다. */
+const VALUE_FLAGS = new Set(
+  COMMANDS.flatMap((command) =>
+    Object.entries(command.args)
+      .filter(([, arg]) => arg.kind === 'string')
+      .flatMap(([name, arg]) => (arg.alias ? [`--${name}`, `-${arg.alias}`] : [`--${name}`])),
+  ),
+);
+
 /**
- * 첫 인자가 알려진 서브커맨드가 아니면 `mv` 로 본다. 이름이 곧 동사라
- * `claude-mv old new` 가 자연스럽다. `doctor` 라는 이름의 디렉터리를 옮기려면
- * `--` 나 `./doctor` 를 쓴다 - git 의 ref/path 규칙과 같다.
+ * 어떤 명령을 실행할지 고른다.
+ *
+ * 명령 이름이 맨 앞에 온다고 가정하면 안 된다. `claude-mv --claude-home X ls` 처럼
+ * 전역 플래그를 앞에 두는 건 흔한 형태다 (`git --git-dir=X status`).
+ * 그래서 플래그를 건너뛰면서 첫 낱말을 찾는다.
+ *
+ * 알려진 명령이 없으면 `mv` 로 본다 - 이름이 곧 동사라 `claude-mv old new` 가
+ * 자연스럽다. `doctor` 라는 이름의 디렉터리를 옮기려면 `--` 나 `./doctor` 를 쓴다.
  */
 export function dispatch(argv: string[]): { command: string; rest: string[] } {
-  const [first, ...rest] = argv;
-  if (first === '--') return { command: 'mv', rest };
-  if (first && COMMAND_NAMES.includes(first)) return { command: first, rest };
-  if (first === '__complete') return { command: '__complete', rest };
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i]!;
+
+    if (token === '--') return { command: 'mv', rest: argv.slice(i + 1) };
+    if (token === '__complete') return { command: '__complete', rest: argv.slice(i + 1) };
+
+    if (token.startsWith('-')) {
+      // `--flag=value` 는 한 낱말, `--flag value` 는 두 낱말이다.
+      if (!token.includes('=') && VALUE_FLAGS.has(token)) i++;
+      continue;
+    }
+
+    if (COMMAND_NAMES.includes(token)) {
+      return { command: token, rest: [...argv.slice(0, i), ...argv.slice(i + 1)] };
+    }
+    break;
+  }
+
   return { command: 'mv', rest: argv };
 }
