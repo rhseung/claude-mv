@@ -152,6 +152,20 @@ export async function rewriteTranscript(
   visit: PathVisitor,
   opts?: VisitOptions & { stagingSuffix?: string },
 ): Promise<RewriteResult> {
+  return rewriteJsonl(filePath, (record) => visitPaths(record, visit, opts), opts);
+}
+
+/**
+ * 레코드 하나를 고칠지 결정하는 함수. 고쳤으면 true 를 준다.
+ * 트랜스크립트와 history.jsonl 은 필드가 달라서 여기를 갈아끼운다.
+ */
+export type RecordMutator = (record: unknown) => boolean;
+
+export async function rewriteJsonl(
+  filePath: string,
+  mutate: RecordMutator,
+  opts?: { stagingSuffix?: string },
+): Promise<RewriteResult> {
   const staging = join(
     dirname(filePath),
     `${filePath.split('/').pop()}.claude-mv-${opts?.stagingSuffix ?? 'tmp'}`,
@@ -202,7 +216,7 @@ export async function rewriteTranscript(
         continue;
       }
 
-      if (!visitPaths(record, visit, opts)) {
+      if (!mutate(record)) {
         await emit(line.raw);
         await emit(line.terminator);
         continue;
