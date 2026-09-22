@@ -58,6 +58,10 @@ export const COMMANDS: CommandSpec[] = [
       'state-only': { kind: 'boolean', description: '디렉터리는 두고 상태만 옮깁니다' },
       'rewrite-prose': { kind: 'boolean', description: '대화 본문의 경로까지 바꿉니다' },
       'allow-ancestors': { kind: 'boolean', description: '상위에서 도는 세션을 허용합니다' },
+      'skip-live': {
+        kind: 'boolean',
+        description: '살아 있는 세션의 트랜스크립트는 건드리지 않습니다',
+      },
     },
   },
   {

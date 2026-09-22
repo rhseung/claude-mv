@@ -42,6 +42,7 @@ export type Blocker =
 
 export type Warning =
   | { kind: 'mixed-cwd'; file: string; paths: string[] }
+  | { kind: 'skipped-live'; sessionId: string }
   | { kind: 'rewritten-in-parent-dir'; dirName: string; files: number }
   | { kind: 'mangle-collision'; other: string }
   | { kind: 'nothing-to-do' };
@@ -101,6 +102,16 @@ export type PlanContext = {
   dstExists: boolean;
   /** 살아 있는 것으로 판정된 세션. lock 검사 결과를 주입받는다. */
   liveSessions: SessionRecord[];
+  /** lock 을 차단 사유로 올릴지. --force 면 false. */
+  blockOnLocks?: boolean;
+  /**
+   * 살아 있는 세션의 트랜스크립트를 재작성 대상에서 뺀다.
+   *
+   * 라이브 파일을 rename 으로 갈아끼우면 그 세션이 이후에 쓰는 기록을 잃을 수 있다.
+   * 그 세션의 cwd 자체가 옮겨지는 게 아니라면, 몇 줄의 과거 맥락을 옛 경로로 남겨두는
+   * 편이 진행 중인 대화를 잃는 것보다 낫다.
+   */
+  skipLiveTranscripts?: boolean;
 };
 
 export function buildPlan(req: MoveRequest, ctx: PlanContext): MigrationPlan {
@@ -121,7 +132,7 @@ export function buildPlan(req: MoveRequest, ctx: PlanContext): MigrationPlan {
 
   if (!req.stateOnly && !ctx.srcExists) blockers.push({ kind: 'src-missing' });
 
-  if (ctx.liveSessions.length > 0) {
+  if (ctx.blockOnLocks !== false && ctx.liveSessions.length > 0) {
     blockers.push({ kind: 'locked', sessions: ctx.liveSessions });
   }
 
@@ -154,7 +165,23 @@ export function buildPlan(req: MoveRequest, ctx: PlanContext): MigrationPlan {
       });
     }
 
+    const liveSessionIds = new Set(ctx.liveSessions.map((s) => s.sessionId));
+
     for (const t of touched) {
+      // 플랜 소유권은 트랜스크립트를 건너뛰든 말든 성립한다. 플랜 파일 자체는
+      // 별도 파일이라 라이브 세션과 무관하게 고칠 수 있다.
+      for (const path of t.paths.keys()) {
+        if (isUnder(path, ctx.plansDir, req.policy, req.platform)) planFiles.add(path);
+      }
+
+      // 세션 본체만 건너뛴다. subagent 트랜스크립트는 에이전트가 끝나면 더 쓰이지
+      // 않고, 안 옮기면 cwd 가 통째로 없는 경로를 가리키게 된다. 혹시 아직 도는
+      // 에이전트가 있으면 동시 수정 감지가 잡는다.
+      if (ctx.skipLiveTranscripts && t.kind === 'session' && liveSessionIds.has(t.sessionId)) {
+        warnings.push({ kind: 'skipped-live', sessionId: t.sessionId });
+        continue;
+      }
+
       const mixed = isMixed(t, req);
       if (mixed.length > 0) warnings.push({ kind: 'mixed-cwd', file: t.file, paths: mixed });
 
@@ -166,12 +193,6 @@ export function buildPlan(req: MoveRequest, ctx: PlanContext): MigrationPlan {
         affected: affectedCount(t, req),
         total: t.lines,
       });
-
-      // 플랜 파일은 트랜스크립트의 구조 필드(planFilePath, trackingPath)로만 찾는다.
-      // 전역 디렉터리를 경로 문자열로 훑으면 남의 플랜을 건드린다.
-      for (const path of t.paths.keys()) {
-        if (isUnder(path, ctx.plansDir, req.policy, req.platform)) planFiles.add(path);
-      }
     }
   }
 

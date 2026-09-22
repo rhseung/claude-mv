@@ -115,6 +115,7 @@ async function run(
         force: bool(parsed, 'force'),
         noBackup: bool(parsed, 'no-backup'),
         allowAncestors: bool(parsed, 'allow-ancestors'),
+        skipLive: bool(parsed, 'skip-live'),
         home,
         version: VERSION,
       });
@@ -186,6 +187,7 @@ async function run(
         force: false,
         noBackup: false,
         allowAncestors: false,
+        skipLive: false,
         home,
         version: VERSION,
       });

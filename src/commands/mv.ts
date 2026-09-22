@@ -25,6 +25,7 @@ export type MoveOptions = {
   force: boolean;
   noBackup: boolean;
   allowAncestors: boolean;
+  skipLive: boolean;
   home: string;
   version: string;
 };
@@ -70,7 +71,11 @@ export async function runMove(
     fileExists: ctx.exists,
     srcExists: ctx.exists(src),
     dstExists: ctx.exists(dst),
-    liveSessions: opts.force ? [] : locks.blocking.map((f) => f.session),
+    // force 는 "막지 말라" 는 뜻이지 "살아 있지 않다" 는 뜻이 아니다. 건너뛸 대상을
+    // 고르려면 살아 있다는 사실 자체는 알아야 한다.
+    liveSessions: locks.findings.filter((f) => f.verdict !== 'stale').map((f) => f.session),
+    blockOnLocks: !opts.force,
+    skipLiveTranscripts: opts.skipLive,
   });
 
   // 막는 lock 은 blocker 로 다시 나온다. 여기서는 막지 않는 것만 알려준다

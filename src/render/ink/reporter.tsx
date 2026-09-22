@@ -115,6 +115,8 @@ function describeWarning(warning: MigrationPlan['warnings'][number]): string {
       return `상위 프로젝트에 속한 ${warning.files}개 파일은 옮기지 않고 제자리에서 고칩니다.`;
     case 'mangle-collision':
       return `대상 경로가 다른 경로와 같은 디렉터리 이름을 씁니다: ${warning.other}`;
+    case 'skipped-live':
+      return `세션 ${warning.sessionId.slice(0, 8)} 은 실행 중이라 본체 트랜스크립트를 건드리지 않습니다.`;
     case 'nothing-to-do':
       return '옮길 상태를 찾지 못했습니다.';
   }
