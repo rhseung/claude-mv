@@ -22,4 +22,12 @@ jobs:
       - run: bun run build
       - run: bun run sync:version --check
       - run: git diff --exit-code plugin/hooks/session-start.mjs
+      - name: npm 이 trusted publishing 요건을 만족하는지
+        run: |
+          required=11.5.1
+          actual=$(npm --version)
+          if [ "$(printf '%s\n%s\n' "$required" "$actual" | sort -V | head -1)" != "$required" ]; then
+            echo "npm $actual 로는 OIDC 배포가 되지 않습니다. $required 이상이 필요합니다." >&2
+            exit 1
+          fi
       - run: npm publish --access public --provenance
