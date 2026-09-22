@@ -1,6 +1,6 @@
 {
   "name": "@rhseung/claude-mv",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "프로젝트 디렉터리를 옮기면서 Claude Code 프로젝트 상태까지 같이 옮깁니다",
   "type": "module",
   "license": "MIT",
