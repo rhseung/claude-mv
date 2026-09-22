@@ -216,18 +216,14 @@ export async function rewriteJsonl(
       await emit(line.terminator);
     }
 
+    const after = await stat(filePath);
+    if (after.size !== before.size || after.ino !== before.ino) {
+      throw new ConcurrentModificationError(filePath);
+    }
+
     await new Promise<void>((resolve, reject) => {
       out.end((err?: Error | null) => (err ? reject(err) : resolve()));
     });
-
-    const after = await stat(filePath);
-    if (
-      after.size !== before.size ||
-      after.mtimeMs !== before.mtimeMs ||
-      after.ino !== before.ino
-    ) {
-      throw new ConcurrentModificationError(filePath);
-    }
 
     const handle = await open(staging, 'r+');
     try {
