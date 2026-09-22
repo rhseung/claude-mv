@@ -18,6 +18,16 @@ import { scan } from '../src/core/scan.js';
 const SRC_NAME = 'old-name';
 const DST_NAME = 'new-name';
 
+function fieldsIn<T>(file: string, field: string): T[] {
+  return readFileSync(file, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => (JSON.parse(line) as Record<string, unknown>)[field])
+    .filter((value): value is T => value !== undefined);
+}
+
+const cwdsIn = (file: string) => fieldsIn<string>(file, 'cwd');
+
 async function setup() {
   const seed = createFakeClaudeHome({});
   const work = join(seed.home, 'work');
@@ -51,7 +61,7 @@ async function setup() {
 
   const plansDir = join(seed.home, 'plans');
   mkdirSync(plansDir, { recursive: true });
-  writeFileSync(planFile, `작업 대상은 ${src}/sub 입니다.\n`);
+  writeFileSync(planFile, `작업 대상은 ${join(src, 'sub')} 입니다.\n`);
 
   const request: MoveRequest = {
     src,
@@ -107,13 +117,12 @@ describe('apply', () => {
     expect(exists(join(ctx.home.projectsDir, mangle(ctx.dst)))).toBe(true);
     expect(exists(join(ctx.home.projectsDir, mangle(ctx.src)))).toBe(false);
 
-    const moved = readFileSync(join(ctx.home.projectsDir, mangle(ctx.dst), 's1.jsonl'), 'utf8');
+    const moved = cwdsIn(join(ctx.home.projectsDir, mangle(ctx.dst), 's1.jsonl'));
     expect(moved).toContain(ctx.dst);
-    expect(moved).not.toContain(`"${ctx.src}"`);
+    expect(moved).not.toContain(ctx.src);
 
-    const inParent = readFileSync(
+    const inParent = cwdsIn(
       join(ctx.home.projectsDir, mangle(ctx.work), 's2', 'subagents', 'agent-1.jsonl'),
-      'utf8',
     );
     expect(inParent).toContain(ctx.dst);
 
@@ -121,11 +130,11 @@ describe('apply', () => {
     expect(Object.keys(config.projects)).toEqual([ctx.dst, '/unrelated/keep']);
     expect(config.githubRepoPaths['me/repo']).toEqual([ctx.dst]);
 
-    const history = readFileSync(ctx.home.historyPath, 'utf8');
-    expect(history.split('\n').filter((l) => l.includes(ctx.dst))).toHaveLength(3);
-    expect(history.split('\n').filter((l) => l.includes('/unrelated/keep'))).toHaveLength(2);
+    const history = fieldsIn<string>(ctx.home.historyPath, 'project');
+    expect(history.filter((project) => project === ctx.dst)).toHaveLength(3);
+    expect(history.filter((project) => project === '/unrelated/keep')).toHaveLength(2);
 
-    expect(readFileSync(ctx.planFile, 'utf8')).toContain(`${ctx.dst}/sub`);
+    expect(readFileSync(ctx.planFile, 'utf8')).toContain(join(ctx.dst, 'sub'));
 
     expect(exists(join(ctx.home.cacheRoot!, mangle(ctx.dst)))).toBe(true);
   });

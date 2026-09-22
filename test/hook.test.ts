@@ -52,9 +52,10 @@ describe('session-start 훅', () => {
     const home = fakeHome({ projects: [gone], configKeys: [gone] });
     const out = await callHook(now, home);
 
-    expect(out).toContain('claude-mv');
-    expect(out).toContain(gone);
-    expect(JSON.parse(out).systemMessage).toContain('--state-only');
+    const message = JSON.parse(out).systemMessage as string;
+    expect(message).toContain('claude-mv');
+    expect(message).toContain(gone);
+    expect(message).toContain('--state-only');
   });
 
   it('원본이 아직 살아 있으면 경고하지 않는다', async () => {

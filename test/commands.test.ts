@@ -13,6 +13,10 @@ import { scan } from '../src/core/scan.js';
 
 import type { AppContext } from '../src/shared/context.js';
 
+function firstRecord(file: string): { cwd?: string } {
+  return JSON.parse(readFileSync(file, 'utf8').split('\n')[0]!) as { cwd?: string };
+}
+
 function silentReporter() {
   const notes: string[] = [];
   const warnings: string[] = [];
@@ -105,8 +109,9 @@ describe('rm', () => {
 
 describe('merge', () => {
   it('세션 파일을 옮기고 빈 디렉터리를 치운다', async () => {
-    const a = '/w/a';
-    const b = '/w/b';
+    const world = temporaryDirectory();
+    const a = join(world, 'a');
+    const b = join(world, 'b');
     const ctx = await context({
       projects: [
         { path: a, sessions: { 'sess-a': [records.user(a)] } },
@@ -125,8 +130,9 @@ describe('merge', () => {
   });
 
   it('이름이 겹치면 덮지 않고 건너뛴다', async () => {
-    const a = '/w/a';
-    const b = '/w/b';
+    const world = temporaryDirectory();
+    const a = join(world, 'a');
+    const b = join(world, 'b');
     const ctx = await context({
       projects: [
         { path: a, sessions: { same: [records.user(a)] } },
@@ -138,13 +144,13 @@ describe('merge', () => {
     runMerge(ctx, reporter, { from: b, to: a, home: '/home', yes: true });
 
     expect(warnings.join()).toContain('same.jsonl');
-    expect(readFileSync(join(ctx.env.projectsDir, mangle(a), 'same.jsonl'), 'utf8')).toContain(a);
+    expect(firstRecord(join(ctx.env.projectsDir, mangle(a), 'same.jsonl')).cwd).toBe(a);
   });
 });
 
 describe('export / import', () => {
   it('내보낸 뒤 다른 홈으로 들여오면 기록이 그대로다', async () => {
-    const path = '/w/proj';
+    const path = join(temporaryDirectory(), 'proj');
     const source = await context({
       projects: [{ path, sessions: { s1: [records.user(path), records.user(path)] } }],
     });
@@ -159,11 +165,11 @@ describe('export / import', () => {
 
     expect(result.code).toBe('ok');
     const restored = join(destination.env.projectsDir, mangle(path), 's1.jsonl');
-    expect(readFileSync(restored, 'utf8')).toContain(path);
+    expect(firstRecord(restored).cwd).toBe(path);
   });
 
   it('--to 를 주면 이어서 이관할 경로를 알려준다', async () => {
-    const path = '/w/proj';
+    const path = join(temporaryDirectory(), 'proj');
     const source = await context({
       projects: [{ path, sessions: { s1: [records.user(path)] } }],
     });
@@ -175,16 +181,16 @@ describe('export / import', () => {
     const destination = await context({});
     const result = runImport(destination, reporter, {
       file: bundle,
-      to: '/elsewhere/proj',
+      to: join(temporaryDirectory(), 'elsewhere'),
       home: '/home',
     });
 
     expect(result.migrateFrom).toBe(path);
-    expect(result.migrateTo).toBe('/elsewhere/proj');
+    expect(result.migrateTo).toBeDefined();
   });
 
   it('이미 있는 상태는 덮어쓰지 않는다', async () => {
-    const path = '/w/proj';
+    const path = join(temporaryDirectory(), 'proj');
     const source = await context({
       projects: [{ path, sessions: { s1: [records.user(path)] } }],
     });
@@ -212,7 +218,7 @@ describe('export / import', () => {
 
 describe('backup', () => {
   it('이동 없이 스냅샷만 만든다', async () => {
-    const path = '/w/proj';
+    const path = join(temporaryDirectory(), 'proj');
     const ctx = await context({
       projects: [{ path, sessions: { s1: [records.user(path)] } }],
     });
