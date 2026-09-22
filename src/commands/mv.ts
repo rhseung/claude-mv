@@ -8,7 +8,7 @@ import { apply, backupRoot } from '../core/apply.js';
 import { createBackup } from '../core/backup.js';
 import { Journal } from '../core/journal.js';
 import { checkLocks } from '../core/lock.js';
-import { normalizePath } from '../core/paths.js';
+import { normalizePath, pathEquals } from '../core/paths.js';
 import { buildPlan, type MigrationPlan, type MoveRequest } from '../core/plan.js';
 import { rollback } from '../core/rollback.js';
 
@@ -35,11 +35,17 @@ export async function runMove(
   reporter: Reporter,
   opts: MoveOptions,
 ): Promise<ExitCodeName> {
-  const norm = (value: string): string =>
-    normalizePath(value, { platform: ctx.platform, home: opts.home });
+  const norm = (value: string, realpath = true): string =>
+    normalizePath(value, { platform: ctx.platform, home: opts.home, realpath });
 
-  const src = norm(opts.src);
-  const dst = norm(opts.dst);
+  // 심볼릭 링크를 어떻게 다룰지가 갈린다. Claude Code 는 process.cwd() 를 저장하는데
+  // 그건 링크가 풀린 값이다. 그래서 기본은 realpath 다.
+  //
+  // 그런데 사용자가 링크 쪽 경로를 칠 수도 있고, 실제로 macOS 의 /var 는
+  // /private/var 로 풀린다. 둘 중 상태에 실제로 있는 쪽을 쓴다 - 없는 쪽을 고집하면
+  // "옮길 게 없다" 고 끝나버린다.
+  const src = pickKnown(ctx, [norm(opts.src), norm(opts.src, false)]);
+  const dst = norm(opts.dst, false);
 
   if (src === dst) throw new CliError('src 와 dst 가 같습니다.', 'usage');
 
@@ -150,6 +156,20 @@ export async function runMove(
   for (const residue of reverted.residue) reporter.warn(`${residue.path}: ${residue.why}`);
 
   return reverted.ok ? 'failedRolledBack' : 'failedDirty';
+}
+
+/** 후보 중 Claude 가 실제로 알고 있는 경로를 고른다. 없으면 첫 번째(realpath)를 쓴다. */
+function pickKnown(ctx: AppContext, candidates: string[]): string {
+  for (const candidate of candidates) {
+    const known =
+      ctx.index.projects.some(
+        (p) =>
+          (p.primaryCwd && pathEquals(p.primaryCwd, candidate, ctx.policy)) ||
+          [...p.cwdCensus.keys()].some((c) => pathEquals(c, candidate, ctx.policy)),
+      ) || ctx.index.configProjectKeys.some((k) => pathEquals(k, candidate, ctx.policy));
+    if (known) return candidate;
+  }
+  return candidates[0]!;
 }
 
 function blockerExit(plan: MigrationPlan): ExitCodeName {
