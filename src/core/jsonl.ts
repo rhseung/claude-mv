@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { chmod, open, rename, stat, unlink } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import path from 'node:path';
 
 import {
   visitCwdFields,
@@ -123,6 +123,14 @@ export async function censusTranscript(
   return census;
 }
 
+export function stagingPathFor(
+  filePath: string,
+  suffix = 'tmp',
+  impl: typeof path.posix = path,
+): string {
+  return impl.join(impl.dirname(filePath), `${impl.basename(filePath)}.claude-mv-${suffix}`);
+}
+
 export class ConcurrentModificationError extends Error {
   constructor(readonly file: string) {
     super(`재작성하는 동안 파일이 바뀌었습니다: ${file}`);
@@ -154,10 +162,7 @@ export async function rewriteJsonl(
   mutate: RecordMutator,
   opts?: { stagingSuffix?: string },
 ): Promise<RewriteResult> {
-  const staging = join(
-    dirname(filePath),
-    `${filePath.split('/').pop()}.claude-mv-${opts?.stagingSuffix ?? 'tmp'}`,
-  );
+  const staging = stagingPathFor(filePath, opts?.stagingSuffix);
 
   const before = await stat(filePath);
 

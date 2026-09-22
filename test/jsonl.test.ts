@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { posix, win32 } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -7,6 +8,7 @@ import {
   censusTranscript,
   ConcurrentModificationError,
   rewriteTranscript,
+  stagingPathFor,
 } from '../src/core/jsonl.js';
 import { reparent } from '../src/core/paths.js';
 
@@ -137,5 +139,17 @@ describe('동시 수정', () => {
     };
 
     await expect(rewriteTranscript(file, racing)).rejects.toThrow(ConcurrentModificationError);
+  });
+});
+
+describe('stagingPathFor', () => {
+  it('같은 디렉터리에 임시 이름을 만든다', () => {
+    expect(stagingPathFor('/a/b/s1.jsonl', 'stage', posix)).toBe('/a/b/s1.jsonl.claude-mv-stage');
+  });
+
+  it('윈도우 경로에서도 디렉터리를 벗어나지 않는다', () => {
+    expect(stagingPathFor('C:\\a\\b\\s1.jsonl', 'stage', win32)).toBe(
+      'C:\\a\\b\\s1.jsonl.claude-mv-stage',
+    );
   });
 });
