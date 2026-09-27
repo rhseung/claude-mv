@@ -63,6 +63,11 @@ export const records = {
     backup: { backupFileName: null, version: 1, realParentDir: `${root}/src` },
   }),
 
+  withReadResult: (path: string) => ({
+    type: 'user',
+    toolUseResult: { type: 'text', file: { filePath: path, content: '' } },
+  }),
+
   proseOnly: (path: string) => ({
     type: 'assistant',
     message: { role: 'assistant', content: [{ type: 'text', text: `cd ${path} 했습니다` }] },

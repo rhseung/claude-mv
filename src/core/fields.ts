@@ -132,6 +132,11 @@ export function visitProsePaths(record: unknown, visit: PathVisitor): boolean {
 
   changed = visitField(record.toolUseResult, 'stdout', visit) || changed;
   changed = visitField(record.toolUseResult, 'stderr', visit) || changed;
+  // 도구 입력의 file_path 가 prose 라서 그 결과 쪽도 같이 prose 로 둔다.
+  changed = visitField(record.toolUseResult, 'filePath', visit) || changed;
+  if (isRecord(record.toolUseResult)) {
+    changed = visitField(record.toolUseResult.file, 'filePath', visit) || changed;
+  }
 
   const message = record.message;
   if (isRecord(message) && Array.isArray(message.content)) {

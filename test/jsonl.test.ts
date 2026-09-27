@@ -34,6 +34,7 @@ describe('바이트 동일성', () => {
         records.withClassifier(OLD, null),
         records.withFileHistory(OLD),
         records.withFileHistoryDelta(OLD),
+        records.withReadResult(`${OLD}/a.ts`),
         records.proseOnly(OLD),
       ],
       opts,
@@ -117,6 +118,15 @@ describe('rewriteTranscript', () => {
     expect(backups['src/a.ts'].realParentDir).toBe(`${NEW}/src`);
     expect(backups[`${NEW}/b.ts`].realParentDir).toBe(NEW);
     expect(delta.backup.realParentDir).toBe(`${NEW}/src`);
+  });
+
+  it('도구 결과의 filePath 는 prose 라서 기본으로는 두고 --rewrite-prose 에서만 옮긴다', async () => {
+    const { file } = writeTranscript([records.withReadResult(`${OLD}/a.ts`)]);
+    expect((await rewriteTranscript(file, mapper)).linesChanged).toBe(0);
+
+    const result = await rewriteTranscript(file, mapper, { includeProse: true });
+    const out = JSON.parse(readFileSync(result.staged!, 'utf8').trim());
+    expect(out.toolUseResult.file.filePath).toBe(`${NEW}/a.ts`);
   });
 
   it('파싱 안 되는 줄도 버리지 않는다', async () => {
