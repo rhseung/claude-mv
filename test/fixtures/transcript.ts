@@ -44,6 +44,25 @@ export const records = {
     },
   }),
 
+  withFileHistory: (root: string) => ({
+    type: 'file-history-snapshot',
+    messageId: 'm1',
+    snapshot: {
+      messageId: 'm1',
+      trackedFileBackups: {
+        'src/a.ts': { backupFileName: 'aa@v1', version: 1, realParentDir: `${root}/src` },
+        [`${root}/b.ts`]: { backupFileName: 'bb@v1', version: 1, realParentDir: root },
+        'c.ts': { backupFileName: 'cc@v1', version: 1 },
+      },
+    },
+  }),
+
+  withFileHistoryDelta: (root: string) => ({
+    type: 'file-history-delta',
+    trackingPath: 'src/a.ts',
+    backup: { backupFileName: null, version: 1, realParentDir: `${root}/src` },
+  }),
+
   proseOnly: (path: string) => ({
     type: 'assistant',
     message: { role: 'assistant', content: [{ type: 'text', text: `cd ${path} 했습니다` }] },

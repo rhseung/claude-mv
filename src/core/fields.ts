@@ -36,6 +36,22 @@ function visitArray(holder: unknown, key: string, visit: PathVisitor): boolean {
   return changed;
 }
 
+// 키를 지우고 다시 넣으면 맨 뒤로 가서 순서가 바뀐다. 새 객체를 원래 순서대로 다시 짠다.
+function visitKeys(holder: Record<string, unknown>, key: string, visit: PathVisitor): boolean {
+  const obj = holder[key];
+  if (!isRecord(obj)) return false;
+
+  let changed = false;
+  const next: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(obj)) {
+    const renamed = visit(name);
+    if (renamed !== undefined && renamed !== name) changed = true;
+    next[renamed ?? name] = value;
+  }
+  if (changed) holder[key] = next;
+  return changed;
+}
+
 export function visitCwdFields(record: unknown, visit: PathVisitor): boolean {
   if (!isRecord(record)) return false;
   let changed = false;
@@ -70,6 +86,16 @@ export function visitOtherStructuralFields(record: unknown, visit: PathVisitor):
     isRecord(classifier) && isRecord(classifier.context) ? classifier.context.git_state : undefined;
   changed = visitField(gitState, 'cwd', visit) || changed;
   changed = visitField(gitState, 'root', visit) || changed;
+
+  // /rewind 가 백업을 되돌릴 위치를 realParentDir 로 찾는다. 키도 가끔 상대경로가 아닌 절대경로다.
+  changed = visitField(record.backup, 'realParentDir', visit) || changed;
+  const snapshot = isRecord(record.snapshot) ? record.snapshot : undefined;
+  if (snapshot && isRecord(snapshot.trackedFileBackups)) {
+    changed = visitKeys(snapshot, 'trackedFileBackups', visit) || changed;
+    for (const backup of Object.values(snapshot.trackedFileBackups)) {
+      changed = visitField(backup, 'realParentDir', visit) || changed;
+    }
+  }
 
   const attachment = record.attachment;
   if (isRecord(attachment)) {

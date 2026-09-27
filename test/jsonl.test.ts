@@ -32,6 +32,8 @@ describe('바이트 동일성', () => {
         records.withWire(OLD),
         records.withSnapshot(OLD, ['/other/root']),
         records.withClassifier(OLD, null),
+        records.withFileHistory(OLD),
+        records.withFileHistoryDelta(OLD),
         records.proseOnly(OLD),
       ],
       opts,
@@ -96,6 +98,25 @@ describe('rewriteTranscript', () => {
       root: NEW,
       branch: null,
     });
+  });
+
+  it('파일 히스토리의 realParentDir 와 절대경로 키를 옮기고 키 순서를 지킨다', async () => {
+    const { file } = writeTranscript([
+      records.withFileHistory(OLD),
+      records.withFileHistoryDelta(OLD),
+    ]);
+    const result = await rewriteTranscript(file, mapper);
+    expect(result.linesChanged).toBe(2);
+
+    const [snap, delta] = readFileSync(result.staged!, 'utf8')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l));
+    const backups = snap.snapshot.trackedFileBackups;
+    expect(Object.keys(backups)).toEqual(['src/a.ts', `${NEW}/b.ts`, 'c.ts']);
+    expect(backups['src/a.ts'].realParentDir).toBe(`${NEW}/src`);
+    expect(backups[`${NEW}/b.ts`].realParentDir).toBe(NEW);
+    expect(delta.backup.realParentDir).toBe(`${NEW}/src`);
   });
 
   it('파싱 안 되는 줄도 버리지 않는다', async () => {
