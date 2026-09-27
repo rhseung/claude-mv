@@ -35,6 +35,15 @@ export const records = {
     message: { role: 'user', content: [{ type: 'tool_use', input: { planFilePath: planPath } }] },
   }),
 
+  withClassifier: (cwd: string, root: string | null) => ({
+    type: 'user',
+    cwd,
+    serverClassifierContext: {
+      request: 'r1',
+      context: { git_state: { cwd, root, branch: null, error: 'pending' } },
+    },
+  }),
+
   proseOnly: (path: string) => ({
     type: 'assistant',
     message: { role: 'assistant', content: [{ type: 'text', text: `cd ${path} 했습니다` }] },

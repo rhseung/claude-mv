@@ -31,6 +31,7 @@ describe('바이트 동일성', () => {
         records.pathless(),
         records.withWire(OLD),
         records.withSnapshot(OLD, ['/other/root']),
+        records.withClassifier(OLD, null),
         records.proseOnly(OLD),
       ],
       opts,
@@ -83,6 +84,18 @@ describe('rewriteTranscript', () => {
     expect(out.attachment.snapshot.workingDirectory).toBe(`${NEW}/src`);
     expect(out.attachment.snapshot.additionalWorkingDirectories).toEqual([`${NEW}/docs`]);
     expect(out.attachment.path).toBe('.zshrc');
+  });
+
+  it('auto mode 판정 기록의 git_state 경로도 옮긴다', async () => {
+    const { file } = writeTranscript([records.withClassifier(`${OLD}/src`, OLD)]);
+    const result = await rewriteTranscript(file, mapper);
+
+    const out = JSON.parse(readFileSync(result.staged!, 'utf8').trim());
+    expect(out.serverClassifierContext.context.git_state).toMatchObject({
+      cwd: `${NEW}/src`,
+      root: NEW,
+      branch: null,
+    });
   });
 
   it('파싱 안 되는 줄도 버리지 않는다', async () => {

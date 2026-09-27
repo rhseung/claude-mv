@@ -64,6 +64,13 @@ export function visitOtherStructuralFields(record: unknown, visit: PathVisitor):
 
   changed = visitField(record, 'trackingPath', visit) || changed;
 
+  // cwd 집계에 넣지 않으려고 visitCwdFields 가 아닌 여기서 고친다. root 는 cwd 가 아니다.
+  const classifier = record.serverClassifierContext;
+  const gitState =
+    isRecord(classifier) && isRecord(classifier.context) ? classifier.context.git_state : undefined;
+  changed = visitField(gitState, 'cwd', visit) || changed;
+  changed = visitField(gitState, 'root', visit) || changed;
+
   const attachment = record.attachment;
   if (isRecord(attachment)) {
     changed = visitField(attachment, 'path', visit) || changed;
