@@ -11,6 +11,8 @@ import type { MigrationPlan } from '../../core/plan.js';
 import type { ProjectDirInfo } from '../../core/scan.js';
 import type { BackupSummary, Reporter } from '../reporter.js';
 
+const INK_FRAME_MS = 40;
+
 export function createInkReporter(): Reporter {
   const store = createStore();
   const plain = new PlainReporter();
@@ -93,8 +95,14 @@ export function createInkReporter(): Reporter {
     },
 
     async close() {
+      // ink 는 프레임을 32ms 로 throttle 해서 마지막 프레임이 trailing 타이머에 걸려 있다.
+      // 바로 unmount 하고 process.exit 하면 그 프레임이 버려져 화면에 아무것도 안 남는다.
+      await new Promise((resolve) => setTimeout(resolve, INK_FRAME_MS));
+      // unmount 가 resolve 하는 건 그 시점에 이미 만들어진 exit promise 뿐이다.
+      // 순서를 뒤집으면 영원히 안 끝나는 promise 를 기다리다 exit code 없이 0 으로 끝난다.
+      const exited = instance.waitUntilExit();
       instance.unmount();
-      await instance.waitUntilExit();
+      await exited;
     },
   };
 }

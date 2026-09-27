@@ -1,16 +1,16 @@
 import { ConfirmInput, Spinner } from '@inkjs/ui';
 import { Box, Text } from 'ink';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import stringWidth from 'string-width';
 
 import { describeStep, duration, pad } from '../format.js';
 
 import type { Store } from './store.js';
 
+// useEffect 로 구독하면 첫 커밋 뒤에야 붙어서, 그 전에 들어온 store.set 을 놓친다.
+// await 없이 바로 plan 을 내는 경로에서는 화면이 끝까지 비어 있게 된다.
 function useStore(store: Store) {
-  const [, force] = useState(0);
-  useEffect(() => store.subscribe(() => force((n) => n + 1)), [store]);
-  return store.state;
+  return useSyncExternalStore(store.subscribe, () => store.state);
 }
 
 const MARK = { pending: '-', running: ' ', done: 'v', failed: 'x' } as const;
