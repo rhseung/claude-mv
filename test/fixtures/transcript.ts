@@ -40,7 +40,7 @@ export const records = {
     cwd,
     serverClassifierContext: {
       request: 'r1',
-      context: { git_state: { cwd, root, branch: null, error: 'pending' } },
+      context: { git_state: { cwd, root, branch: null, error: 'pending' }, live_cwd: cwd },
     },
   }),
 

@@ -94,6 +94,7 @@ describe('rewriteTranscript', () => {
     const result = await rewriteTranscript(file, mapper);
 
     const out = JSON.parse(readFileSync(result.staged!, 'utf8').trim());
+    expect(out.serverClassifierContext.context.live_cwd).toBe(`${NEW}/src`);
     expect(out.serverClassifierContext.context.git_state).toMatchObject({
       cwd: `${NEW}/src`,
       root: NEW,
