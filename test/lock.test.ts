@@ -51,6 +51,17 @@ describe('checkLocks', () => {
     expect(report.blocking).toHaveLength(1);
   });
 
+  it('dst 에서 도는 세션도 막는다', async () => {
+    const dst = '/Users/me/dev/renamed';
+    const report = await checkLocks([session({ cwd: `${dst}/src` })], {
+      ...opts,
+      dst,
+      probe: probe(),
+    });
+    expect(report.findings[0]).toMatchObject({ verdict: 'live', relation: 'at-or-under' });
+    expect(report.blocking).toHaveLength(1);
+  });
+
   it('--allow-ancestor 면 상위는 통과시킨다', async () => {
     const report = await checkLocks([session({ cwd: '/Users/me/dev' })], {
       ...opts,

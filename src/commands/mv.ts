@@ -55,6 +55,7 @@ export async function runMove(
 
   const locks = await checkLocks(ctx.index.sessions, {
     src,
+    dst,
     policy: ctx.policy,
     platform: ctx.platform,
     probe: ctx.probe,

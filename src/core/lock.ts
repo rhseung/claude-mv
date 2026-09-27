@@ -34,6 +34,7 @@ export async function checkLocks(
   sessions: SessionRecord[],
   opts: {
     src: string;
+    dst?: string;
     policy: CasePolicy;
     platform: NodeJS.Platform;
     probe: ProcessProbe;
@@ -42,10 +43,13 @@ export async function checkLocks(
 ): Promise<LockReport> {
   const findings: LockFinding[] = [];
 
+  const within = (cwd: string, root: string) =>
+    pathEquals(cwd, root, opts.policy) || isUnder(cwd, root, opts.policy, opts.platform);
+
   for (const session of sessions) {
+    // --state-only 는 이미 dst 로 옮긴 뒤라 dst 에서 새로 연 세션의 transcript 도 다시 쓴다.
     const atOrUnder =
-      pathEquals(session.cwd, opts.src, opts.policy) ||
-      isUnder(session.cwd, opts.src, opts.policy, opts.platform);
+      within(session.cwd, opts.src) || (opts.dst !== undefined && within(session.cwd, opts.dst));
     const ancestor = !atOrUnder && isUnder(opts.src, session.cwd, opts.policy, opts.platform);
     if (!atOrUnder && !ancestor) continue;
 
