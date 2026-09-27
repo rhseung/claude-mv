@@ -35,6 +35,7 @@ describe('바이트 동일성', () => {
         records.withFileHistory(OLD),
         records.withFileHistoryDelta(OLD),
         records.withReadResult(`${OLD}/a.ts`),
+        records.withBashEditDiff(`${OLD}/a.ts`),
         records.proseOnly(OLD),
       ],
       opts,
@@ -128,6 +129,16 @@ describe('rewriteTranscript', () => {
     const result = await rewriteTranscript(file, mapper, { includeProse: true });
     const out = JSON.parse(readFileSync(result.staged!, 'utf8').trim());
     expect(out.toolUseResult.file.filePath).toBe(`${NEW}/a.ts`);
+  });
+
+  it('Bash 편집 diff 의 경로도 prose 로 다룬다', async () => {
+    const { file } = writeTranscript([records.withBashEditDiff(`${OLD}/a.ts`)]);
+    expect((await rewriteTranscript(file, mapper)).linesChanged).toBe(0);
+
+    const result = await rewriteTranscript(file, mapper, { includeProse: true });
+    const diff = JSON.parse(readFileSync(result.staged!, 'utf8').trim()).toolUseResult.bashEditDiff;
+    expect(diff.changedFiles).toEqual([`${NEW}/a.ts`]);
+    expect(diff.files[0].filePath).toBe(`${NEW}/a.ts`);
   });
 
   it('파싱 안 되는 줄도 버리지 않는다', async () => {

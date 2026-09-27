@@ -68,6 +68,14 @@ export const records = {
     toolUseResult: { type: 'text', file: { filePath: path, content: '' } },
   }),
 
+  withBashEditDiff: (path: string) => ({
+    type: 'user',
+    toolUseResult: {
+      stdout: '',
+      bashEditDiff: { changedFiles: [path], files: [{ filePath: path, hunks: '[]' }] },
+    },
+  }),
+
   proseOnly: (path: string) => ({
     type: 'assistant',
     message: { role: 'assistant', content: [{ type: 'text', text: `cd ${path} 했습니다` }] },

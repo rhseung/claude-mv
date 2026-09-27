@@ -138,6 +138,14 @@ export function visitProsePaths(record: unknown, visit: PathVisitor): boolean {
   changed = visitField(record.toolUseResult, 'filePath', visit) || changed;
   if (isRecord(record.toolUseResult)) {
     changed = visitField(record.toolUseResult.file, 'filePath', visit) || changed;
+
+    const diff = record.toolUseResult.bashEditDiff;
+    changed = visitArray(diff, 'changedFiles', visit) || changed;
+    if (isRecord(diff) && Array.isArray(diff.files)) {
+      for (const file of diff.files) {
+        changed = visitField(file, 'filePath', visit) || changed;
+      }
+    }
   }
 
   const message = record.message;
