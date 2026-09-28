@@ -58,6 +58,8 @@ export type TranscriptCensus = {
   lines: number;
   bytes: number;
   paths: Map<string, number>;
+  // paths 는 경로별 줄 수라 합치면 한 줄에 경로가 여럿인 줄을 여러 번 센다. 줄 수는 이 묶음으로 센다.
+  pathGroups: Map<string, { paths: string[]; lines: number }>;
   cwds: Map<string, number>;
   prose: Map<string, number>;
   pathless: number;
@@ -73,6 +75,7 @@ export async function censusTranscript(
     lines: 0,
     bytes: (await stat(filePath)).size,
     paths: new Map(),
+    pathGroups: new Map(),
     cwds: new Map(),
     prose: new Map(),
     pathless: 0,
@@ -110,6 +113,13 @@ export async function censusTranscript(
 
     for (const value of onThisLine) {
       census.paths.set(value, (census.paths.get(value) ?? 0) + 1);
+    }
+    if (onThisLine.size > 0) {
+      const paths = [...onThisLine].sort();
+      const key = JSON.stringify(paths);
+      const group = census.pathGroups.get(key);
+      if (group) group.lines++;
+      else census.pathGroups.set(key, { paths, lines: 1 });
     }
     for (const value of cwdsOnThisLine) {
       census.cwds.set(value, (census.cwds.get(value) ?? 0) + 1);

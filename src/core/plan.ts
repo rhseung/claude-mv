@@ -56,10 +56,12 @@ export type MigrationPlan = {
 
 function affectedCount(t: TranscriptInfo, req: MoveRequest): number {
   let n = 0;
-  for (const [path, lines] of t.paths) {
-    if (reparent(path, req.src, req.dst, req.policy, req.platform) !== undefined) n += lines;
+  for (const { paths, lines } of t.pathGroups.values()) {
+    if (paths.some((p) => reparent(p, req.src, req.dst, req.policy, req.platform) !== undefined)) {
+      n += lines;
+    }
   }
-  return Math.min(n, t.lines);
+  return n;
 }
 
 function isMixed(t: TranscriptInfo, req: MoveRequest): string[] {

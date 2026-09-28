@@ -61,6 +61,26 @@ function lockedBy(session: SessionRecord): LockReport {
 }
 
 describe('buildPlan', () => {
+  it('한 줄에 옮길 경로가 여럿이어도 그 줄은 한 번만 센다', async () => {
+    const p = await plan({
+      projects: [
+        {
+          path: SRC,
+          sessions: {
+            s1: [
+              records.user(SRC),
+              records.withClassifier(`${SRC}/src`, SRC),
+              records.pathless(),
+              records.pathless(),
+            ],
+          },
+        },
+      ],
+    });
+
+    expect(p.steps.find((s) => s.kind === 'rewrite-transcript')).toMatchObject({ affected: 2 });
+  });
+
   it('src 의 project 디렉터리는 통째로 옮긴다', async () => {
     const p = await plan({ projects: [{ path: SRC, sessions: { s1: [records.user(SRC)] } }] });
 
